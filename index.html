@@ -1,0 +1,2275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>고연부동산 매물관리</title>
+<style>
+  :root {
+    --primary:#1a56db; --primary-light:#e8f0fe;
+    --success:#0e9f6e; --success-light:#def7ec;
+    --warning:#c27803; --warning-light:#fdf6b2;
+    --danger:#e02424;  --danger-light:#fde8e8;
+    --neutral:#6b7280; --neutral-light:#f3f4f6;
+    --bg:#f9fafb; --card:#fff; --border:#e5e7eb;
+    --text:#111827; --text-sm:#6b7280;
+    --shadow:0 1px 3px rgba(0,0,0,.10);
+    --shadow-md:0 4px 12px rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+  .app{display:flex;height:100vh;overflow:hidden}
+  .sidebar{width:220px;background:#1e293b;color:#e2e8f0;flex-shrink:0;display:flex;flex-direction:column}
+  .main{flex:1;overflow-y:auto}
+  .sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid #334155}
+  .sidebar-logo h1{font-size:17px;font-weight:700;color:#fff}
+  .sidebar-logo p{font-size:11px;color:#94a3b8;margin-top:2px}
+  .sidebar-nav{padding:12px 0;flex:1}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;color:#94a3b8;border-left:3px solid transparent;transition:all .15s;font-size:13.5px}
+  .nav-item:hover{background:#334155;color:#e2e8f0}
+  .nav-item.active{background:#1e40af22;color:#93c5fd;border-left-color:#3b82f6}
+  .sidebar-bottom{padding:12px 16px;border-top:1px solid #334155}
+  .sync-status{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:#6b7280;flex-shrink:0;transition:background .3s}
+  .sync-dot.synced{background:#10b981}
+  .sync-dot.syncing{background:#f59e0b;animation:pulse 1s infinite}
+  .sync-dot.error{background:#ef4444}
+  .sync-dot.offline{background:#6b7280}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .sync-label{font-size:11px;color:#64748b}
+  .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+  .topbar h2{font-size:17px;font-weight:600}
+  .topbar-actions{display:flex;gap:8px}
+  .btn{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-primary:hover{background:#1648c0}
+  .btn-secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}
+  .btn-secondary:hover{background:var(--neutral-light)}
+  .btn-danger{background:var(--danger-light);color:var(--danger)}
+  .btn-danger:hover{background:#fca5a5}
+  .btn-success{background:var(--success);color:#fff}
+  .btn-success:hover{background:#057a55}
+  .btn-sm{padding:4px 10px;font-size:12px}
+  .content{padding:24px}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--card);border-radius:10px;padding:18px;box-shadow:var(--shadow)}
+  .stat-card .label{font-size:12px;color:var(--text-sm);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+  .stat-card .value{font-size:28px;font-weight:700;margin:6px 0 2px}
+  .stat-card .sub{font-size:12px;color:var(--text-sm)}
+  .stat-card.blue .value{color:var(--primary)}
+  .stat-card.green .value{color:var(--success)}
+  .stat-card.orange .value{color:var(--warning)}
+  .stat-card.red .value{color:var(--danger)}
+  .dash-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .dash-card{background:var(--card);border-radius:10px;padding:18px;box-shadow:var(--shadow)}
+  .dash-card h3{font-size:14px;font-weight:600;margin-bottom:14px}
+  .status-bars{display:flex;flex-direction:column;gap:10px}
+  .status-bar-row{display:flex;align-items:center;gap:8px}
+  .status-bar-label{width:80px;font-size:12px;color:var(--text-sm)}
+  .status-bar-track{flex:1;height:8px;background:var(--neutral-light);border-radius:4px;overflow:hidden}
+  .status-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+  .status-bar-count{width:24px;text-align:right;font-size:12px;font-weight:600}
+  .region-table{width:100%;border-collapse:collapse;font-size:13px}
+  .region-table th{text-align:left;padding:6px 8px;color:var(--text-sm);font-weight:500;border-bottom:1px solid var(--border);font-size:12px}
+  .region-table td{padding:7px 8px;border-bottom:1px solid var(--border)}
+  .region-table tr:last-child td{border-bottom:none}
+  .table-container{background:var(--card);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+  .table-toolbar{padding:14px 16px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .search-box{display:flex;align-items:center;gap:6px;background:var(--neutral-light);border:1px solid var(--border);border-radius:6px;padding:6px 10px;flex:1;min-width:200px}
+  .search-box input{border:none;background:transparent;outline:none;font-size:13px;width:100%}
+  select.filter{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--card);color:var(--text);outline:none;cursor:pointer}
+  table{width:100%;border-collapse:collapse}
+  thead th{background:var(--neutral-light);padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:var(--text-sm);white-space:nowrap}
+  tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+  tbody tr:hover{background:var(--primary-light)}
+  tbody td{padding:10px 12px;font-size:13px;vertical-align:middle}
+  .no-data{text-align:center;padding:48px;color:var(--text-sm)}
+  .table-footer{padding:10px 16px;font-size:12px;color:var(--text-sm);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .badge{display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600}
+  .badge-매물확보{background:#dbeafe;color:#1e40af}
+  .badge-광고중{background:#d1fae5;color:#065f46}
+  .badge-예약{background:#fef3c7;color:#92400e}
+  .badge-계약완료{background:#e5e7eb;color:#374151}
+  .badge-보류{background:#fee2e2;color:#991b1b}
+  .badge-매매{background:#fef2f2;color:#b91c1c}
+  .badge-전세{background:#ede9fe;color:#5b21b6}
+  .badge-월세{background:#e0f2fe;color:#0c4a6e}
+  .badge-반전세{background:#fce7f3;color:#9d174d}
+  .badge-오피스텔{background:#f0fdf4;color:#14532d}
+  .badge-원룸{background:#fffbeb;color:#78350f}
+  .badge-빌라{background:#faf5ff;color:#581c87}
+  .action-btns{display:flex;gap:4px}
+  .icon-btn{padding:4px 8px;border-radius:5px;border:none;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;background:transparent}
+  .icon-btn:hover{background:var(--neutral-light)}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:none;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--card);border-radius:12px;width:700px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-md)}
+  .modal-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card);z-index:1}
+  .modal-header h3{font-size:16px;font-weight:600}
+  .modal-body{padding:20px}
+  .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--card)}
+  .close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-sm);line-height:1}
+  .form-section{margin-bottom:20px}
+  .form-section-title{font-size:12px;font-weight:700;color:var(--text-sm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .form-grid.col3{grid-template-columns:1fr 1fr 1fr}
+  .form-group{display:flex;flex-direction:column;gap:5px}
+  .form-group.full{grid-column:1/-1}
+  label{font-size:12px;font-weight:600;color:var(--text-sm)}
+  .form-control{padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none;background:var(--card);color:var(--text);width:100%;transition:border .15s}
+  .form-control:focus{border-color:var(--primary);box-shadow:0 0 0 2px #3b82f620}
+  textarea.form-control{resize:vertical;min-height:70px}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+  .detail-item label{font-size:11px;color:var(--text-sm);font-weight:600;display:block;margin-bottom:3px}
+  .detail-item span{font-size:14px;color:var(--text)}
+  .detail-item.full{grid-column:1/-1}
+  .detail-divider{grid-column:1/-1;border:none;border-top:1px solid var(--border);margin:4px 0}
+  .confirm-modal{width:400px}
+  .confirm-modal .modal-body{text-align:center;padding:30px 20px}
+  .confirm-modal .confirm-icon{font-size:40px;margin-bottom:14px}
+  .confirm-modal h4{font-size:16px;margin-bottom:8px}
+  .confirm-modal p{color:var(--text-sm);font-size:13px}
+  .landlord-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .landlord-card{background:var(--card);border-radius:10px;padding:16px;box-shadow:var(--shadow);border:1px solid var(--border)}
+  .landlord-card .name{font-size:15px;font-weight:600;margin-bottom:6px}
+  .landlord-card .phone{font-size:13px;color:var(--primary);margin-bottom:8px}
+  .landlord-card .meta{font-size:12px;color:var(--text-sm);line-height:1.7}
+  .landlord-card .actions{margin-top:12px;display:flex;gap:6px}
+  .badge-relation{display:inline-block;padding:1px 7px;border-radius:9999px;font-size:11px;font-weight:600}
+  .badge-신규{background:#e0f2fe;color:#0c4a6e}
+  .badge-단골{background:#d1fae5;color:#065f46}
+  .badge-VIP{background:#fef9c3;color:#713f12}
+  .toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;z-index:200;transform:translateY(80px);opacity:0;transition:all .25s;box-shadow:var(--shadow-md)}
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast.success{background:var(--success)}
+  .toast.error{background:var(--danger)}
+  .toast.warning{background:var(--warning)}
+  .page{display:none}
+  .page.active{display:block}
+
+  /* Settings modal */
+  .settings-modal{width:480px}
+  .settings-step{display:flex;gap:12px;margin-bottom:18px;padding:14px;background:var(--neutral-light);border-radius:8px}
+  .settings-step .step-num{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+  .settings-step .step-body h4{font-size:13px;font-weight:600;margin-bottom:4px}
+  .settings-step .step-body p{font-size:12px;color:var(--text-sm);line-height:1.5}
+  .connection-result{padding:10px 14px;border-radius:6px;font-size:13px;margin-top:10px;display:none}
+  .connection-result.success{background:var(--success-light);color:#065f46}
+  .connection-result.error{background:var(--danger-light);color:#991b1b}
+
+  /* Loading overlay */
+  .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:150;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+  .loading-overlay.show{display:flex}
+  .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-overlay p{font-size:14px;color:var(--text-sm);font-weight:500}
+
+  /* Setup banner */
+  .setup-banner{background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .setup-banner p{font-size:13px}
+  .setup-banner strong{font-weight:700}
+
+  @media(max-width:900px){
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+    .dash-row{grid-template-columns:1fr}
+    .landlord-grid{grid-template-columns:repeat(2,1fr)}
+    .form-grid{grid-template-columns:1fr}
+    .form-grid.col3{grid-template-columns:1fr 1fr}
+    .records-grid{grid-template-columns:repeat(2,1fr)}
+  }
+
+  /* ── 일정관리 ──────────────────────────────── */
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .cal-day-header{text-align:center;padding:6px 2px;font-size:11px;font-weight:700;color:var(--text-sm)}
+  .cal-day{min-height:80px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:5px;cursor:pointer;position:relative}
+  .cal-day:hover{background:var(--primary-light)}
+  .cal-day.other-month{background:var(--neutral-light);opacity:.55}
+  .cal-day.today{border-color:var(--primary);background:#eff6ff}
+  .cal-day-num{font-size:11px;font-weight:600;margin-bottom:3px;color:var(--text-sm)}
+  .cal-day.today .cal-day-num{color:var(--primary);font-weight:800}
+  .cal-event{font-size:10px;padding:1px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-weight:500}
+  .cal-event.방문약속{background:#dbeafe;color:#1e40af}
+  .cal-event.계약일{background:#d1fae5;color:#065f46}
+  .cal-event.임대차만료{background:#fef3c7;color:#92400e}
+  .cal-event.기타{background:#f3e8ff;color:#6b21a8}
+  .event-list{display:flex;flex-direction:column;gap:8px}
+  .event-row{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--card);border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background .1s}
+  .event-row:hover{background:var(--primary-light)}
+  .event-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+  /* ── 통화관리 ──────────────────────────────── */
+  .call-card{background:var(--card);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);border:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .call-urgency{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .call-urgency.ok{background:#10b981}
+  .call-urgency.warn{background:#f59e0b}
+  .call-urgency.urgent{background:#ef4444;animation:pulse 1.2s infinite}
+  /* ── 의뢰관리 ──────────────────────────────── */
+  .badge-접수중{background:#dbeafe;color:#1e40af}
+  .badge-진행중{background:#d1fae5;color:#065f46}
+  .badge-취소{background:#fee2e2;color:#991b1b}
+  /* ── 공부열람 ──────────────────────────────── */
+  .records-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .record-card{background:var(--card);border-radius:10px;padding:20px;box-shadow:var(--shadow);border:1px solid var(--border);display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all .15s;text-decoration:none;color:inherit}
+  .record-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--primary)}
+  .record-card .r-icon{font-size:28px}
+  .record-card .r-title{font-size:14px;font-weight:700;color:var(--text)}
+  .record-card .r-desc{font-size:12px;color:var(--text-sm);line-height:1.5}
+  .record-card .r-link{font-size:11px;color:var(--primary);margin-top:4px}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>🏢 고연부동산</h1>
+      <p>매물 관리 시스템</p>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-item active" onclick="showPage('dashboard')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        대시보드
+      </div>
+      <div class="nav-item" onclick="showPage('properties')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        매물 목록
+      </div>
+      <div class="nav-item" onclick="showPage('landlords')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        임대인 관리
+      </div>
+      <div class="nav-item" onclick="showPage('map')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        매물 지도
+      </div>
+      <div class="nav-item" onclick="showPage('schedule')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        일정관리
+      </div>
+      <div class="nav-item" onclick="showPage('calls')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.07 1.18 2 2 0 012.05 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z"/></svg>
+        통화관리
+      </div>
+      <div class="nav-item" onclick="showPage('requests')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        의뢰관리
+      </div>
+      <div class="nav-item" onclick="showPage('records')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        공부열람
+      </div>
+      <div class="nav-item" onclick="openSettings()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        구글 시트 설정
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sync-status">
+        <div class="sync-dot offline" id="syncDot"></div>
+        <span class="sync-label" id="syncLabel">시트 미연결</span>
+      </div>
+      <small id="dataCount" style="color:#475569;font-size:11px">매물 0건 · 임대인 0명</small>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Setup Banner (shown when not configured) -->
+    <div class="setup-banner" id="setupBanner" style="display:none">
+      <p>📡 <strong>구글 시트 미연결</strong> — 지금은 이 기기에만 저장됩니다. 태블릿·다른 기기와 동기화하려면 구글 시트를 연결하세요.</p>
+      <button class="btn btn-sm" style="background:#fff;color:#1e40af;flex-shrink:0" onclick="openSettings()">지금 설정</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="topbar">
+        <h2>📊 대시보드</h2>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary btn-sm" onclick="manualSync()" id="syncBtn">🔄 시트 동기화</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportData()">💾 백업</button>
+          <button class="btn btn-secondary btn-sm" onclick="importData()">📂 불러오기</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats-grid">
+          <div class="stat-card blue"><div class="label">전체 매물</div><div class="value" id="stat-total">0</div><div class="sub">등록된 전체 매물</div></div>
+          <div class="stat-card green"><div class="label">광고 중</div><div class="value" id="stat-active">0</div><div class="sub">현재 내놓은 매물</div></div>
+          <div class="stat-card orange"><div class="label">계약 완료</div><div class="value" id="stat-done">0</div><div class="sub">이번 달 성사</div></div>
+          <div class="stat-card red"><div class="label">임대인 수</div><div class="value" id="stat-landlords">0</div><div class="sub">등록된 임대인</div></div>
+        </div>
+        <div class="dash-row">
+          <div class="dash-card"><h3>📍 권역별 매물 현황</h3>
+            <table class="region-table"><thead><tr><th>구</th><th>매물수</th><th>광고중</th><th>계약완료</th></tr></thead><tbody id="regionTableBody"></tbody></table>
+          </div>
+          <div class="dash-card"><h3>📋 매물 상태 현황</h3><div class="status-bars" id="statusBars"></div></div>
+        </div>
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px" id="dashExtrasRow">
+          <div class="dash-card"><h3>📅 오늘 · 다가오는 일정</h3><div id="dashScheduleList" style="font-size:12px;color:var(--text-sm)">-</div></div>
+          <div class="dash-card"><h3>📞 연락 필요한 임대인</h3><div id="dashCallList" style="font-size:12px;color:var(--text-sm)">-</div></div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="dash-card"><h3>🕐 최근 등록 매물 (5건)</h3>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead><tr style="border-bottom:1px solid var(--border)">
+                <th style="padding:7px 10px;text-align:left;color:var(--text-sm);font-size:12px">매물번호</th>
+                <th style="padding:7px 10px;text-align:left;color:var(--text-sm);font-size:12px">주소</th>
+                <th style="padding:7px 10px;text-align:left;color:var(--text-sm);font-size:12px">거래유형</th>
+                <th style="padding:7px 10px;text-align:left;color:var(--text-sm);font-size:12px">보증금/월세</th>
+                <th style="padding:7px 10px;text-align:left;color:var(--text-sm);font-size:12px">상태</th>
+              </tr></thead>
+              <tbody id="recentProperties"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROPERTIES -->
+    <div id="page-properties" class="page">
+      <div class="topbar"><h2>🏠 매물 목록</h2><div class="topbar-actions">
+          <button class="btn btn-secondary" onclick="document.getElementById('surveyFileInput').click()">📋 조사표 가져오기</button>
+          <input type="file" id="surveyFileInput" accept=".xlsx" style="display:none" onchange="handleSurveyImport(event)">
+          <button class="btn btn-primary" onclick="openPropertyModal()">+ 매물 등록</button>
+        </div></div>
+      <div class="content">
+        <div class="table-container">
+          <div class="table-toolbar">
+            <div class="search-box">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchInput" placeholder="주소, 건물명으로 검색..." oninput="renderPropertyTable()">
+            </div>
+            <input type="text" class="filter" id="filterRegion" placeholder="구/동 검색..." oninput="renderPropertyTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none;width:130px">
+            <select class="filter" id="filterStatus" onchange="renderPropertyTable()">
+              <option value="">전체 상태</option>
+              <option>매물확보</option><option>광고중</option><option>예약</option><option>계약완료</option><option>보류</option>
+            </select>
+            <select class="filter" id="filterType" onchange="renderPropertyTable()">
+              <option value="">전체 유형</option>
+              <option>오피스텔</option><option>원룸</option><option>빌라</option><option>기타</option>
+            </select>
+            <select class="filter" id="filterDeal" onchange="renderPropertyTable()">
+              <option value="">전체 거래</option>
+              <option>매매</option><option>전세</option><option>월세</option><option>반전세</option>
+            </select>
+            <select class="filter" id="filterDepositMax" onchange="renderPropertyTable()" title="보증금 이하">
+              <option value="">보증금 전체</option>
+              <option value="500">500만 이하</option>
+              <option value="1000">1,000만 이하</option>
+              <option value="3000">3,000만 이하</option>
+              <option value="5000">5,000만 이하</option>
+            </select>
+            <select class="filter" id="filterAreaMax" onchange="renderPropertyTable()" title="면적 이하">
+              <option value="">면적 전체</option>
+              <option value="20">20㎡ 이하</option>
+              <option value="33">33㎡ 이하</option>
+              <option value="50">50㎡ 이하</option>
+              <option value="66">66㎡ 이하</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>매물번호</th><th>등록일</th><th>권역</th><th>상세주소</th><th>유형</th><th>거래</th><th>보증금</th><th>월세</th><th>면적</th><th>옵션</th><th>상태</th><th>관리</th></tr></thead>
+              <tbody id="propertyTableBody"><tr><td colspan="11" class="no-data">등록된 매물이 없습니다.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="table-footer"><span id="tableCount">0건</span><span id="tableSummary"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LANDLORDS -->
+    <div id="page-landlords" class="page">
+      <div class="topbar"><h2>👤 임대인 관리</h2><div class="topbar-actions"><button class="btn btn-primary" onclick="openLandlordModal()">+ 임대인 등록</button></div></div>
+      <div class="content">
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <div class="search-box" style="max-width:300px">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="landlordSearch" placeholder="이름, 연락처 검색..." oninput="renderLandlordGrid()">
+          </div>
+          <select class="filter" id="filterRelation" onchange="renderLandlordGrid()">
+            <option value="">전체 관계</option><option>신규</option><option>단골</option><option>VIP</option>
+          </select>
+        </div>
+        <div class="landlord-grid" id="landlordGrid"><div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-sm)">등록된 임대인이 없습니다.</div></div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE PAGE -->
+    <div id="page-schedule" class="page">
+      <div class="topbar">
+        <h2>📅 일정관리</h2>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary btn-sm" onclick="changeCalMonth(-1)">◀ 이전달</button>
+          <span id="calMonthLabel" style="font-weight:600;font-size:14px;min-width:90px;text-align:center;display:inline-block"></span>
+          <button class="btn btn-secondary btn-sm" onclick="changeCalMonth(1)">다음달 ▶</button>
+          <button class="btn btn-primary" onclick="openScheduleModal()">+ 일정 등록</button>
+        </div>
+      </div>
+      <div class="content">
+        <div style="display:grid;grid-template-columns:1fr 300px;gap:16px">
+          <div>
+            <div class="cal-grid" id="calDayHeaders"></div>
+            <div class="cal-grid" id="calGrid" style="margin-top:4px"></div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:12px">📋 이번 달 일정</div>
+            <div class="event-list" id="eventList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALL MANAGEMENT PAGE -->
+    <div id="page-calls" class="page">
+      <div class="topbar">
+        <h2>📞 통화관리</h2>
+        <div class="topbar-actions">
+          <select class="filter" id="callFilter" onchange="renderCallPage()">
+            <option value="">전체</option>
+            <option value="urgent">연락 필요</option>
+            <option value="warn">주의</option>
+            <option value="ok">양호</option>
+          </select>
+        </div>
+      </div>
+      <div class="content">
+        <div style="background:#eff6ff;border:1px solid var(--primary);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1e40af">
+          💡 임대인별 마지막 통화일을 기록하고, 오랫동안 연락하지 않은 임대인을 파악할 수 있습니다. 통화 완료 버튼으로 날짜를 갱신하세요.
+        </div>
+        <div id="callStats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px"></div>
+        <div id="callGrid" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
+    <!-- REQUEST MANAGEMENT PAGE -->
+    <div id="page-requests" class="page">
+      <div class="topbar">
+        <h2>📋 의뢰관리</h2>
+        <div class="topbar-actions">
+          <select class="filter" id="requestStatusFilter" onchange="renderRequestTable()">
+            <option value="">전체 상태</option>
+            <option>접수중</option><option>진행중</option><option>계약완료</option><option>취소</option>
+          </select>
+          <select class="filter" id="requestTypeFilter" onchange="renderRequestTable()">
+            <option value="">전체 유형</option>
+            <option>오피스텔</option><option>원룸</option><option>빌라</option><option>기타</option>
+          </select>
+          <button class="btn btn-primary" onclick="openRequestModal()">+ 의뢰 등록</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="table-container">
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>번호</th><th>접수일</th><th>이름</th><th>연락처</th><th>유형</th><th>거래</th><th>희망지역</th><th>예산</th><th>입주희망</th><th>상태</th><th>관리</th></tr></thead>
+              <tbody id="requestTableBody"><tr><td colspan="11" class="no-data">등록된 의뢰가 없습니다.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="table-footer"><span id="requestCount">0건</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUBLIC RECORDS PAGE -->
+    <div id="page-records" class="page">
+      <div class="topbar"><h2>📚 공부열람 바로가기</h2></div>
+      <div class="content">
+        <div style="background:#eff6ff;border:1px solid var(--primary);border-radius:8px;padding:12px 16px;margin-bottom:20px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#1e40af">주소 입력 후 바로가기 클릭 (주소가 있으면 해당 페이지로 바로 이동합니다)</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="recordAddrInput" class="form-control" placeholder="예: 서울 동대문구 안암로 148" style="max-width:420px">
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('recordAddrInput').value=''">지우기</button>
+          </div>
+        </div>
+        <div class="records-grid">
+          <div class="record-card" onclick="openRecord('eais')">
+            <div class="r-icon">🏛️</div>
+            <div class="r-title">건축물대장</div>
+            <div class="r-desc">건축물 기본현황, 소유자, 위반건축물 여부 확인</div>
+            <div class="r-link">cloud.eais.go.kr →</div>
+          </div>
+          <div class="record-card" onclick="openRecord('eum')">
+            <div class="r-icon">🗺️</div>
+            <div class="r-title">토지정보 (토지이음)</div>
+            <div class="r-desc">토지이용계획확인서, 용도지역, 개발행위허가 조회</div>
+            <div class="r-link">eum.go.kr →</div>
+          </div>
+          <div class="record-card" onclick="openRecord('realtyprice')">
+            <div class="r-icon">💰</div>
+            <div class="r-title">개별공시지가</div>
+            <div class="r-desc">개별공시지가 및 표준지공시지가 조회</div>
+            <div class="r-link">realtyprice.kr →</div>
+          </div>
+          <div class="record-card" onclick="openRecord('iros')">
+            <div class="r-icon">📜</div>
+            <div class="r-title">인터넷 등기소</div>
+            <div class="r-desc">등기부등본 발급, 소유권·담보 확인</div>
+            <div class="r-link">iros.go.kr →</div>
+          </div>
+          <div class="record-card" onclick="openRecord('rtms')">
+            <div class="r-icon">📊</div>
+            <div class="r-title">실거래가 조회</div>
+            <div class="r-desc">아파트·오피스텔·빌라 실거래 신고가격 조회</div>
+            <div class="r-link">rt.molit.go.kr →</div>
+          </div>
+          <div class="record-card" onclick="openRecord('naver')">
+            <div class="r-icon">🔍</div>
+            <div class="r-title">네이버 지도 검색</div>
+            <div class="r-desc">주소로 네이버 지도에서 위치·주변 정보 확인</div>
+            <div class="r-link">map.naver.com →</div>
+          </div>
+          <div class="record-card" onclick="openRecord('kab')">
+            <div class="r-icon">🏦</div>
+            <div class="r-title">한국부동산원 청약홈</div>
+            <div class="r-desc">청약 일정, 분양가, 당첨 통계 조회</div>
+            <div class="r-link">applyhome.co.kr →</div>
+          </div>
+          <div class="record-card" onclick="openRecord('hometax')">
+            <div class="r-icon">🧾</div>
+            <div class="r-title">홈택스 (국세청)</div>
+            <div class="r-desc">임대소득세, 취득세 관련 세금 신고 및 조회</div>
+            <div class="r-link">hometax.go.kr →</div>
+          </div>
+          <div class="record-card" onclick="openRecord('wetax')">
+            <div class="r-icon">🏙️</div>
+            <div class="r-title">위택스 (지방세)</div>
+            <div class="r-desc">재산세, 취득세 등 지방세 납부 및 조회</div>
+            <div class="r-link">wetax.go.kr →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAP PAGE -->
+    <div id="page-map" class="page">
+      <div class="topbar">
+        <h2>🗺 매물 지도</h2>
+        <div class="topbar-actions">
+          <select class="filter" id="mapStatusFilter" onchange="renderMapPins()">
+            <option value="">전체 상태</option>
+            <option>매물확보</option><option>광고중</option><option>예약</option><option>계약완료</option><option>보류</option>
+          </select>
+          <select class="filter" id="mapTypeFilter" onchange="renderMapPins()">
+            <option value="">전체 유형</option>
+            <option>오피스텔</option><option>원룸</option><option>빌라</option><option>기타</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="renderMapPins()">🔄 핀 새로고침</button>
+          <button class="btn btn-secondary btn-sm" onclick="localStorage.removeItem('koyeon_geocache_v1');renderMapPins();showToast('주소 캐시 초기화됨')">🗑 캐시 초기화</button>
+        </div>
+      </div>
+      <div id="mapSetupMsg" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 61px);gap:14px;color:var(--text-sm)">
+        <div style="font-size:48px">🗺</div>
+        <p style="font-size:16px;font-weight:600;color:var(--text)">카카오 API 키가 설정되지 않았습니다.</p>
+        <p style="font-size:13px">좌측 하단 <b>구글 시트 설정</b>에서 카카오 API 키를 입력해주세요.</p>
+        <button class="btn btn-primary" onclick="openSettings()">설정하러 가기</button>
+      </div>
+      <div style="position:relative;display:flex">
+        <div id="kakaoMapContainer" style="flex:1;height:calc(100vh - 61px)"></div>
+        <!-- 우측 매물 목록 패널 -->
+        <div id="mapSidePanel" style="width:270px;height:calc(100vh - 61px);overflow-y:auto;background:var(--card);border-left:1px solid var(--border);flex-shrink:0;display:none">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:10">
+            <span style="font-weight:600;font-size:13px">📋 매물 목록</span>
+            <span id="mapSideCount" style="font-size:11px;color:var(--text-sm)"></span>
+          </div>
+          <div id="mapSideList" style="padding:8px"></div>
+        </div>
+        <!-- 범례 -->
+        <div id="mapLegend" style="position:absolute;bottom:20px;left:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;box-shadow:var(--shadow-md);z-index:50;font-size:12px;display:none">
+          <div style="font-weight:600;margin-bottom:8px;color:var(--text)">핀 색상</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#1a56db;display:inline-block"></span>매물확보</div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#0e9f6e;display:inline-block"></span>광고중</div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#c27803;display:inline-block"></span>예약</div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#6b7280;display:inline-block"></span>계약완료</div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#e02424;display:inline-block"></span>보류</div>
+          </div>
+        </div>
+        <!-- 로딩/결과 뱃지 -->
+        <div id="mapStatusBadge" style="position:absolute;top:14px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:12px;box-shadow:var(--shadow);z-index:50;display:none"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p id="loadingMsg">구글 시트에서 데이터를 불러오는 중...</p>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal settings-modal">
+    <div class="modal-header">
+      <h3>⚙️ 구글 시트 연동 설정</h3>
+      <button class="close-btn" onclick="closeModal('settingsModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--neutral-light);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text-sm);line-height:1.6">
+        <b style="color:var(--text)">①</b> 폴더의 <b style="color:var(--text)">고연부동산_Apps_Script.js</b>를 Google Apps Script에 붙여넣고 배포 &nbsp;
+        <b style="color:var(--text)">②</b> 배포 후 생성된 URL을 아래에 입력
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Apps Script 웹 앱 URL</label>
+        <input type="url" id="apiUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>시크릿 (기본값: koyeon2024)</label>
+        <input type="text" id="apiSecret" class="form-control" placeholder="koyeon2024">
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-secondary" onclick="testConnection()">🔌 연결 테스트</button>
+        <span style="font-size:12px;color:var(--text-sm)">저장 전 먼저 테스트해보세요</span>
+      </div>
+      <div class="connection-result" id="connectionResult"></div>
+
+      <!-- 카카오 지도 API 키 -->
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;color:var(--text-sm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🗺 카카오 지도 API 키 (무료)</div>
+        <div class="form-group" style="margin-bottom:4px">
+          <label>JavaScript 키 — <a href="https://developers.kakao.com" target="_blank" style="color:var(--primary);font-weight:400">developers.kakao.com</a> → 내 애플리케이션 → 플랫폼 키 → JavaScript 키</label>
+          <input type="text" id="kakaoKey" class="form-control" placeholder="카카오 JavaScript 앱 키 붙여넣기">
+        </div>
+        <p style="font-size:11px;color:var(--text-sm)">※ 카카오 개발자 콘솔 → 앱 → 일반 → 플랫폼 → Web에 Netlify 주소 등록 필요</p>
+      </div>
+
+      <!-- 기존 데이터 업로드 옵션 -->
+      <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;color:var(--text-sm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">기존 데이터 마이그레이션</div>
+        <p style="font-size:12px;color:var(--text-sm);margin-bottom:10px">이미 로컬에 저장된 매물·임대인 데이터를 구글 시트에 한 번에 올릴 수 있습니다.</p>
+        <button class="btn btn-secondary btn-sm" onclick="pushLocalToSheet()" id="pushBtn">📤 로컬 데이터 → 시트에 올리기</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('settingsModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveSettings()">저장 및 동기화</button>
+    </div>
+  </div>
+</div>
+
+<!-- Property Modal -->
+<div class="modal-overlay" id="propertyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="propertyModalTitle">매물 등록</h3>
+      <button class="close-btn" onclick="closeModal('propertyModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editPropertyId">
+      <div class="form-section">
+        <div class="form-section-title">기본 정보</div>
+        <div class="form-grid">
+          <div class="form-group"><label>등록일 *</label><input type="date" id="p_date" class="form-control"></div>
+          <div class="form-group"><label>구/동 (검색·필터용)</label>
+            <input type="text" id="p_region" class="form-control" placeholder="예: 동대문구, 안암동">
+          </div>
+          <input type="hidden" id="p_dong" value="">
+          <div class="form-group full"><label>상세주소 *</label><input type="text" id="p_address" class="form-control" placeholder="예: 서울 동대문구 안암로 148 202호"></div>
+          <div class="form-group"><label>건물명</label><input type="text" id="p_buildingName" class="form-control" placeholder="예: 고려하이츠"></div>
+          <div class="form-group"><label>호수</label><input type="text" id="p_unit" class="form-control" placeholder="예: 202호"></div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">건물 정보</div>
+        <div class="form-grid col3">
+          <div class="form-group"><label>건물 유형</label>
+            <select id="p_type" class="form-control"><option value="">선택</option><option>오피스텔</option><option>원룸</option><option>빌라</option><option>기타</option></select>
+          </div>
+          <div class="form-group"><label>전용면적(㎡)</label><input type="number" id="p_area" class="form-control" placeholder="예: 23.5" step="0.1"></div>
+          <div class="form-group"><label>층/총층</label><input type="text" id="p_floor" class="form-control" placeholder="예: 3/5"></div>
+          <div class="form-group"><label>방향</label>
+            <select id="p_direction" class="form-control"><option value="">선택</option>
+              <option>남</option><option>동</option><option>서</option><option>북</option>
+              <option>남동</option><option>남서</option><option>북동</option><option>북서</option>
+            </select>
+          </div>
+          <div class="form-group"><label>주차</label>
+            <select id="p_parking" class="form-control"><option value="">선택</option><option>가능</option><option>불가</option><option>문의</option></select>
+          </div>
+          <div class="form-group"><label>옵션</label>
+            <select id="p_option" class="form-control"><option value="">선택</option><option>풀옵션</option><option>세미옵션</option><option>없음</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">거래 조건</div>
+        <div class="form-grid col3">
+          <div class="form-group"><label>거래 유형 *</label>
+            <select id="p_dealType" class="form-control" onchange="toggleRentField()"><option value="">선택</option><option>매매</option><option>전세</option><option>월세</option><option>반전세</option></select>
+          </div>
+          <div class="form-group"><label>보증금 (만원)</label><input type="number" id="p_deposit" class="form-control" placeholder="예: 5000"></div>
+          <div class="form-group" id="rentGroup"><label>월세 (만원)</label><input type="number" id="p_rent" class="form-control" placeholder="예: 50"></div>
+          <div class="form-group"><label>관리비 (만원)</label><input type="number" id="p_maintenance" class="form-control" placeholder="예: 5"></div>
+          <div class="form-group"><label>입주 가능일</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="date" id="p_moveIn" class="form-control">
+              <label style="display:flex;align-items:center;gap:3px;font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;cursor:pointer">
+                <input type="checkbox" id="p_moveInImmediate" onchange="if(this.checked){document.getElementById('p_moveInNego').checked=false;document.getElementById('p_moveIn').value=''}"> 즉시입주
+              </label>
+              <label style="display:flex;align-items:center;gap:3px;font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;cursor:pointer">
+                <input type="checkbox" id="p_moveInNego" onchange="if(this.checked){document.getElementById('p_moveInImmediate').checked=false;document.getElementById('p_moveIn').value=''}"> 협의가능
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">관리 정보</div>
+        <div class="form-grid col3">
+          <div class="form-group"><label>임대인</label>
+            <select id="p_landlordId" class="form-control"><option value="">선택</option></select>
+          </div>
+          <div class="form-group"><label>의뢰 형태</label>
+            <select id="p_commission" class="form-control"><option value="">선택</option><option>일반</option><option>공동중개</option></select>
+          </div>
+          <div class="form-group"><label>상태</label>
+            <select id="p_status" class="form-control"><option>매물확보</option><option>광고중</option><option>예약</option><option>계약완료</option><option>보류</option></select>
+          </div>
+          <div class="form-group"><label>등기부 확인일</label><input type="date" id="p_registryDate" class="form-control"></div>
+          <div class="form-group"><label>사진 촬영</label>
+            <select id="p_photo" class="form-control"><option value="">미완료</option><option value="Y">완료</option></select>
+          </div>
+          <div class="form-group"><label>광고 채널</label><input type="text" id="p_adChannel" class="form-control" placeholder="예: 직방, 네이버"></div>
+        </div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="form-group full"><label>📸 사진 링크 (구글 드라이브 폴더 링크)</label>
+            <div style="display:flex;gap:6px">
+              <input type="url" id="p_photoLink" class="form-control" placeholder="구글 드라이브 링크 붙여넣기...">
+              <button type="button" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap" onclick="window.open(document.getElementById('p_photoLink').value,'_blank')" title="링크 열기">열기</button>
+            </div>
+          </div>
+          <div class="form-group full"><label>비고 / 메모</label><textarea id="p_memo" class="form-control" placeholder="특이사항, 옵션 세부내역, 협의 내용 등..."></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('propertyModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveProperty()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Landlord Modal -->
+<div class="modal-overlay" id="landlordModal">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <h3 id="landlordModalTitle">임대인 등록</h3>
+      <button class="close-btn" onclick="closeModal('landlordModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editLandlordId">
+      <div class="form-grid">
+        <div class="form-group"><label>성명 *</label><input type="text" id="l_name" class="form-control" placeholder="예: 홍길동"></div>
+        <div class="form-group"><label>연락처 *</label><input type="text" id="l_phone" class="form-control" placeholder="예: 010-1234-5678"></div>
+        <div class="form-group full"><label>등기부 주소</label><input type="text" id="l_addr" class="form-control"></div>
+        <div class="form-group"><label>접촉 경로</label>
+          <select id="l_route" class="form-control"><option value="">선택</option><option>직접방문</option><option>전화</option><option>소개</option><option>광고</option><option>기타</option></select>
+        </div>
+        <div class="form-group"><label>관계 등급</label>
+          <select id="l_relation" class="form-control"><option>신규</option><option>단골</option><option>VIP</option></select>
+        </div>
+        <div class="form-group full"><label>메모</label><textarea id="l_memo" class="form-control" placeholder="특이사항, 선호 조건, 연락 가능 시간 등..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('landlordModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveLandlord()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="detailTitle">매물 상세</h3><button class="close-btn" onclick="closeModal('detailModal')">×</button></div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('detailModal')">닫기</button>
+      <button class="btn btn-primary" id="detailEditBtn">수정</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-modal">
+    <div class="modal-body">
+      <div class="confirm-icon">⚠️</div>
+      <h4 id="confirmTitle">삭제하시겠습니까?</h4>
+      <p id="confirmMsg">이 작업은 되돌릴 수 없습니다.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('confirmModal')">취소</button>
+      <button class="btn btn-danger" id="confirmBtn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule Modal -->
+<div class="modal-overlay" id="scheduleModal">
+  <div class="modal" style="width:500px">
+    <div class="modal-header">
+      <h3 id="scheduleModalTitle">일정 등록</h3>
+      <button class="close-btn" onclick="closeModal('scheduleModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editScheduleId">
+      <div class="form-grid">
+        <div class="form-group"><label>제목</label><input type="text" id="sch_title" class="form-control" placeholder="예: 홍길동 방문 약속"></div>
+        <div class="form-group"><label>유형</label>
+          <select id="sch_type" class="form-control"><option>방문약속</option><option>계약일</option><option>임대차만료</option><option>기타</option></select>
+        </div>
+        <div class="form-group"><label>날짜 *</label><input type="date" id="sch_date" class="form-control"></div>
+        <div class="form-group"><label>시간</label><input type="time" id="sch_time" class="form-control"></div>
+        <div class="form-group"><label>연관 매물</label><select id="sch_propertyId" class="form-control"></select></div>
+        <div class="form-group"><label>연관 임대인</label><select id="sch_landlordId" class="form-control"></select></div>
+        <div class="form-group full"><label>메모</label><textarea id="sch_memo" class="form-control" placeholder="상세 내용..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('scheduleModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveSchedule()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Request Modal -->
+<div class="modal-overlay" id="requestModal">
+  <div class="modal" style="width:560px">
+    <div class="modal-header">
+      <h3 id="requestModalTitle">의뢰 등록</h3>
+      <button class="close-btn" onclick="closeModal('requestModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editRequestId">
+      <div class="form-section">
+        <div class="form-section-title">의뢰인 정보</div>
+        <div class="form-grid">
+          <div class="form-group"><label>이름 *</label><input type="text" id="req_name" class="form-control" placeholder="예: 김철수"></div>
+          <div class="form-group"><label>연락처</label><input type="text" id="req_phone" class="form-control" placeholder="010-0000-0000"></div>
+          <div class="form-group"><label>접수일</label><input type="date" id="req_date" class="form-control"></div>
+          <div class="form-group"><label>상태</label>
+            <select id="req_status" class="form-control"><option>접수중</option><option>진행중</option><option>계약완료</option><option>취소</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">희망 조건</div>
+        <div class="form-grid col3">
+          <div class="form-group"><label>매물 유형</label>
+            <select id="req_type" class="form-control"><option value="">선택</option><option>오피스텔</option><option>원룸</option><option>빌라</option><option>기타</option></select>
+          </div>
+          <div class="form-group"><label>거래 유형</label>
+            <select id="req_dealType" class="form-control"><option value="">선택</option><option>전세</option><option>월세</option><option>반전세</option><option>매매</option></select>
+          </div>
+          <div class="form-group"><label>희망 지역</label><input type="text" id="req_region" class="form-control" placeholder="예: 동대문구 안암동"></div>
+          <div class="form-group"><label>최대 보증금 (만원)</label><input type="number" id="req_depositMax" class="form-control" placeholder="예: 5000"></div>
+          <div class="form-group"><label>최대 월세 (만원)</label><input type="number" id="req_rentMax" class="form-control" placeholder="예: 60"></div>
+          <div class="form-group"><label>입주 희망일</label><input type="text" id="req_moveIn" class="form-control" placeholder="예: 즉시입주, 2026-07-01"></div>
+        </div>
+        <div class="form-group" style="margin-top:12px"><label>추가 요구사항</label><textarea id="req_memo" class="form-control" placeholder="주차 필요, 반려동물 가능, 에어컨 필수 등..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('requestModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveRequest()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// SETTINGS & GOOGLE SHEETS API
+// ============================================================
+const SETTINGS_KEY  = 'koyeon_settings_v1';
+const STORE_KEY     = 'koyeon_properties_v1';
+const LANDLORD_KEY  = 'koyeon_landlords_v1';
+const SCHEDULE_KEY  = 'koyeon_schedules_v1';
+const REQUEST_KEY   = 'koyeon_requests_v1';
+
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; }
+  catch { return {}; }
+}
+function storeConfig(c) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(c)); }
+
+const SheetAPI = {
+  isConfigured() {
+    const c = getConfig();
+    return !!(c.apiUrl && c.apiUrl.includes('script.google.com'));
+  },
+
+  async get(action) {
+    const { apiUrl, secret = '' } = getConfig();
+    const url = `${apiUrl}?action=${action}&secret=${encodeURIComponent(secret)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+
+  async post(action, data) {
+    const { apiUrl, secret = '' } = getConfig();
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // avoids CORS preflight
+      body: JSON.stringify({ action, secret, data })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+
+  async getAll() {
+    const result = await this.get('getAll');
+    if (!result.ok) throw new Error(result.error || '데이터 로드 실패');
+    return result;
+  },
+
+  async ping() {
+    return this.get('ping');
+  }
+};
+
+// ============================================================
+// DATA STORE (localStorage cache)
+// ============================================================
+function loadProperties() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+  catch { return []; }
+}
+function saveProperties(data) { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+function loadLandlords() {
+  try { return JSON.parse(localStorage.getItem(LANDLORD_KEY)) || []; }
+  catch { return []; }
+}
+function saveLandlords(data) { localStorage.setItem(LANDLORD_KEY, JSON.stringify(data)); }
+
+// ============================================================
+// SYNC STATUS
+// ============================================================
+function setSyncStatus(state, msg) {
+  const dot   = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  dot.className = 'sync-dot ' + state;
+  const labels = { synced: '시트 연동됨', syncing: '동기화 중...', error: '동기화 오류', offline: '시트 미연결' };
+  label.textContent = msg || labels[state] || state;
+}
+
+function setLoading(show, msg) {
+  const el = document.getElementById('loadingOverlay');
+  el.classList.toggle('show', show);
+  if (msg) document.getElementById('loadingMsg').textContent = msg;
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const navMap = { dashboard:0, properties:1, landlords:2, map:3, schedule:4, calls:5, requests:6, records:7 };
+  if (navMap[name] !== undefined) document.querySelectorAll('.nav-item')[navMap[name]].classList.add('active');
+  if (name === 'dashboard')  renderDashboard();
+  if (name === 'properties') renderPropertyTable();
+  if (name === 'landlords')  renderLandlordGrid();
+  if (name === 'map')        initMapPage();
+  if (name === 'schedule')   renderCalendar();
+  if (name === 'calls')      renderCallPage();
+  if (name === 'requests')   renderRequestTable();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+const REGIONS = []; // 동적으로 region 값에서 추출
+const STATUSES = ['매물확보','광고중','예약','계약완료','보류'];
+const STATUS_COLORS = { '매물확보':'#3b82f6','광고중':'#10b981','예약':'#f59e0b','계약완료':'#6b7280','보류':'#ef4444' };
+
+function renderDashboard() {
+  const props = loadProperties();
+  const lands = loadLandlords();
+  document.getElementById('stat-total').textContent     = props.length;
+  document.getElementById('stat-active').textContent    = props.filter(p=>p.status==='광고중').length;
+  const thisMonth = new Date().toISOString().slice(0,7);
+  document.getElementById('stat-done').textContent      = props.filter(p=>p.status==='계약완료'&&p.date&&p.date.startsWith(thisMonth)).length;
+  document.getElementById('stat-landlords').textContent = lands.length;
+  document.getElementById('dataCount').textContent = `매물 ${props.length}건 · 임대인 ${lands.length}명`;
+
+  const tbody = document.getElementById('regionTableBody');
+  tbody.innerHTML = '';
+  // region 값에서 동적으로 구 목록 추출
+  const regionSet = [...new Set(props.map(p=>p.region||'미분류').filter(Boolean))];
+  regionSet.forEach(r => {
+    const rp = props.filter(p=>(p.region||'미분류')===r);
+    tbody.innerHTML += `<tr><td>${r}</td><td><b>${rp.length}</b></td><td>${rp.filter(p=>p.status==='광고중').length}</td><td>${rp.filter(p=>p.status==='계약완료').length}</td></tr>`;
+  });
+  if (!tbody.children.length) tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-sm)">데이터 없음</td></tr>';
+
+  const barsEl = document.getElementById('statusBars');
+  barsEl.innerHTML = '';
+  const total = props.length || 1;
+  STATUSES.forEach(s => {
+    const cnt = props.filter(p=>p.status===s).length;
+    const pct = Math.round((cnt/total)*100);
+    barsEl.innerHTML += `<div class="status-bar-row"><span class="status-bar-label">${s}</span><div class="status-bar-track"><div class="status-bar-fill" style="width:${pct}%;background:${STATUS_COLORS[s]}"></div></div><span class="status-bar-count">${cnt}</span></div>`;
+  });
+
+  // 대시보드 — 오늘/다가오는 일정
+  const today = new Date().toISOString().slice(0,10);
+  const scheds = loadSchedules().filter(s=>s.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')).slice(0,5);
+  const dSchEl = document.getElementById('dashScheduleList');
+  const EVENT_C = {'방문약속':'#1d4ed8','계약일':'#065f46','임대차만료':'#92400e','기타':'#6b21a8'};
+  if(dSchEl){
+    if(!scheds.length) dSchEl.innerHTML='<div style="color:var(--text-sm);padding:8px 0">등록된 일정이 없습니다. <a href="#" onclick="showPage(\'schedule\');return false;" style="color:var(--primary)">일정 등록 →</a></div>';
+    else dSchEl.innerHTML = scheds.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)"><span style="width:8px;height:8px;border-radius:50%;background:${EVENT_C[s.type]||'#6b7280'};flex-shrink:0;display:inline-block"></span><span style="font-weight:600;font-size:12px">${s.date===today?'오늘':s.date}</span><span style="font-size:12px">${s.title||s.type}</span><span class="cal-event ${s.type}" style="margin-left:auto">${s.type}</span></div>`).join('');
+  }
+  // 대시보드 — 연락 필요한 임대인
+  const lands2 = loadLandlords();
+  const todayD = new Date();
+  const urgentLands = lands2.filter(l=>{
+    const interval = l.callInterval||60;
+    if(!l.lastCallDate) return true;
+    return Math.floor((todayD - new Date(l.lastCallDate))/86400000) >= interval;
+  }).slice(0,5);
+  const dCallEl = document.getElementById('dashCallList');
+  if(dCallEl){
+    if(!urgentLands.length) dCallEl.innerHTML='<div style="color:var(--text-sm);padding:8px 0">🟢 연락이 필요한 임대인이 없습니다.</div>';
+    else dCallEl.innerHTML = urgentLands.map(l=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)"><span style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;display:inline-block"></span><span style="font-weight:600;font-size:12px">${l.name}</span><span style="font-size:11px;color:var(--text-sm)">${l.phone}</span><span style="font-size:11px;color:var(--danger);margin-left:auto">${l.lastCallDate?'마지막: '+l.lastCallDate:'이력없음'}</span></div>`).join('')+'<div style="margin-top:8px"><a href="#" onclick="showPage(\'calls\');return false;" style="font-size:12px;color:var(--primary)">통화관리 페이지 →</a></div>';
+  }
+
+  const recent = [...props].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+  const recentEl = document.getElementById('recentProperties');
+  recentEl.innerHTML = '';
+  if (!recent.length) { recentEl.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-sm)">등록된 매물이 없습니다.</td></tr>'; return; }
+  recent.forEach(p => {
+    const priceStr = p.dealType==='전세' ? `전세 ${fmtMoney(p.deposit)}` : `${fmtMoney(p.deposit)}/${fmtMoney(p.rent)}`;
+    recentEl.innerHTML += `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 10px;font-size:12px;color:var(--text-sm)">${p.id}</td>
+      <td style="padding:8px 10px">${truncate(p.address,25)}</td>
+      <td style="padding:8px 10px"><span class="badge badge-${p.dealType||''}">${p.dealType||'-'}</span></td>
+      <td style="padding:8px 10px;font-size:13px">${priceStr}</td>
+      <td style="padding:8px 10px"><span class="badge badge-${p.status||''}">${p.status||'-'}</span></td>
+    </tr>`;
+  });
+}
+
+// ============================================================
+// PROPERTIES TABLE
+// ============================================================
+function renderPropertyTable() {
+  const q      = (document.getElementById('searchInput').value||'').toLowerCase();
+  const region = document.getElementById('filterRegion').value;
+  const status = document.getElementById('filterStatus').value;
+  const type   = document.getElementById('filterType').value;
+  const deal   = document.getElementById('filterDeal').value;
+
+  const depositMax = parseInt(document.getElementById('filterDepositMax')?.value||'0',10)||0;
+  const areaMax    = parseFloat(document.getElementById('filterAreaMax')?.value||'0')||0;
+
+  let filtered = loadProperties().filter(p => {
+    if (region && !`${p.region||''} ${p.dong||''} ${p.address||''}`.toLowerCase().includes(region.toLowerCase())) return false;
+    if (status && p.status!==status) return false;
+    if (type   && p.buildingType!==type) return false;
+    if (deal   && p.dealType!==deal) return false;
+    if (depositMax && parseInt(p.deposit||0,10) > depositMax) return false;
+    if (areaMax    && parseFloat(p.area||0) > areaMax) return false;
+    if (q && !`${p.address} ${p.buildingName} ${p.memo} ${p.region} ${p.dong||''}`.toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  const tbody = document.getElementById('propertyTableBody');
+  tbody.innerHTML = '';
+  if (!filtered.length) {
+    tbody.innerHTML='<tr><td colspan="11" class="no-data">조건에 맞는 매물이 없습니다.<br><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openPropertyModal()">+ 매물 등록하기</button></td></tr>';
+    document.getElementById('tableCount').textContent='0건';
+    document.getElementById('tableSummary').textContent='';
+    return;
+  }
+  filtered.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-size:12px;color:var(--text-sm)">${p.id}</td>
+      <td>${p.date||'-'}</td>
+      <td>${p.region||'-'}${p.dong?' '+p.dong:''}</td>
+      <td title="${p.address}">${truncate(p.address,22)}</td>
+      <td><span class="badge badge-${p.buildingType||''}">${p.buildingType||'-'}</span></td>
+      <td><span class="badge badge-${p.dealType||''}">${p.dealType||'-'}</span></td>
+      <td>${fmtMoney(p.deposit)}</td>
+      <td>${p.dealType==='전세'?'-':fmtMoney(p.rent)}</td>
+      <td>${p.area?p.area+'㎡':'-'}</td>
+      <td>${p.option||'-'}</td>
+      <td><span class="badge badge-${p.status||''}">${p.status||'-'}</span>${p.commission==='전속'?'<span style="margin-left:3px;font-size:10px;padding:1px 5px;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:600">전속</span>':''}</td>
+      <td class="action-btns">
+        <button class="icon-btn" onclick="viewProperty('${p.id}')" title="상세">👁</button>
+        ${p.photoLink?`<button class="icon-btn" onclick="window.open('${p.photoLink}','_blank')" title="사진 보기">📸</button>`:''}
+        <button class="icon-btn" onclick="openPropertyModal('${p.id}')" title="수정">✏️</button>
+        <button class="icon-btn" onclick="deleteProperty('${p.id}')" title="삭제">🗑</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('tableCount').textContent = `${filtered.length}건`;
+  document.getElementById('tableSummary').textContent = `광고중 ${filtered.filter(p=>p.status==='광고중').length}건`;
+}
+
+// ============================================================
+// PROPERTY MODAL
+// ============================================================
+function openPropertyModal(id=null) {
+  const lSelect = document.getElementById('p_landlordId');
+  lSelect.innerHTML='<option value="">선택</option>';
+  loadLandlords().forEach(l => { lSelect.innerHTML+=`<option value="${l.id}">${l.name} (${l.phone})</option>`; });
+
+  document.getElementById('editPropertyId').value='';
+  document.getElementById('propertyModalTitle').textContent='매물 등록';
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('p_date').value=today;
+  ['p_region','p_dong','p_address','p_buildingName','p_unit','p_type','p_area','p_floor','p_direction',
+   'p_parking','p_option','p_dealType','p_deposit','p_rent','p_maintenance','p_moveIn',
+   'p_landlordId','p_commission','p_moveIn','p_registryDate','p_photo','p_adChannel','p_photoLink','p_memo'].forEach(i=>{
+    const el=document.getElementById(i); if(el) el.value='';
+  });
+  document.getElementById('p_status').value='매물확보';
+  document.getElementById('p_moveInImmediate').checked=false;
+  document.getElementById('p_moveInNego').checked=false;
+
+  if (id) {
+    const p=loadProperties().find(x=>x.id===id); if(!p) return;
+    document.getElementById('editPropertyId').value=p.id;
+    document.getElementById('propertyModalTitle').textContent='매물 수정';
+    const fields={p_date:'date',p_region:'region',p_dong:'dong',p_address:'address',p_buildingName:'buildingName',
+      p_unit:'unit',p_type:'buildingType',p_area:'area',p_floor:'floor',p_direction:'direction',
+      p_parking:'parking',p_option:'option',p_dealType:'dealType',p_deposit:'deposit',p_rent:'rent',
+      p_maintenance:'maintenance',p_landlordId:'landlordId',p_commission:'commission',
+      p_status:'status',p_registryDate:'registryDate',p_photo:'photo',p_adChannel:'adChannel',p_photoLink:'photoLink',p_memo:'memo'};
+    Object.entries(fields).forEach(([elId,key])=>{ const el=document.getElementById(elId); if(el) el.value=p[key]||''; });
+    toggleRentField();
+    // 입주가능일 복원
+    const mi = p.moveIn||'';
+    document.getElementById('p_moveInImmediate').checked = mi==='즉시입주';
+    document.getElementById('p_moveInNego').checked = mi==='협의가능';
+    document.getElementById('p_moveIn').value = (mi==='즉시입주'||mi==='협의가능') ? '' : mi;
+  }
+  document.getElementById('propertyModal').classList.add('open');
+}
+
+function toggleRentField() {
+  const dt=document.getElementById('p_dealType').value;
+  document.getElementById('rentGroup').style.opacity=(dt==='전세'||dt==='매매')?'0.4':'1';
+}
+
+async function saveProperty() {
+  const address=document.getElementById('p_address').value.trim();
+  if(!address){showToast('주소를 입력해주세요.','error');return;}
+
+  const props=loadProperties();
+  const editId=document.getElementById('editPropertyId').value;
+  const obj={
+    id:editId||genId('P',props),
+    date:document.getElementById('p_date').value,
+    region:document.getElementById('p_region').value,
+    dong:document.getElementById('p_dong').value,
+    address,
+    buildingName:document.getElementById('p_buildingName').value,
+    unit:document.getElementById('p_unit').value,
+    buildingType:document.getElementById('p_type').value,
+    area:document.getElementById('p_area').value,
+    floor:document.getElementById('p_floor').value,
+    direction:document.getElementById('p_direction').value,
+    parking:document.getElementById('p_parking').value,
+    option:document.getElementById('p_option').value,
+    dealType:document.getElementById('p_dealType').value,
+    deposit:document.getElementById('p_deposit').value,
+    rent:document.getElementById('p_rent').value,
+    maintenance:document.getElementById('p_maintenance').value,
+    moveIn:document.getElementById('p_moveInImmediate').checked ? '즉시입주' : document.getElementById('p_moveInNego').checked ? '협의가능' : document.getElementById('p_moveIn').value,
+    landlordId:document.getElementById('p_landlordId').value,
+    commission:document.getElementById('p_commission').value,
+    status:document.getElementById('p_status').value,
+    registryDate:document.getElementById('p_registryDate').value,
+    photo:document.getElementById('p_photo').value,
+    adChannel:document.getElementById('p_adChannel').value,
+    photoLink:document.getElementById('p_photoLink').value,
+    memo:document.getElementById('p_memo').value,
+    updatedAt:new Date().toISOString()
+  };
+
+  // 1. 로컬 즉시 저장
+  if(editId){const idx=props.findIndex(p=>p.id===editId);if(idx!==-1)props[idx]=obj;else props.push(obj);}
+  else{props.push(obj);}
+  saveProperties(props);
+  closeModal('propertyModal');
+  renderPropertyTable();
+  updateCount();
+
+  // 2. 구글 시트에 비동기 저장
+  if(SheetAPI.isConfigured()){
+    setSyncStatus('syncing');
+    try{
+      const r=await SheetAPI.post('saveProperty',obj);
+      if(r.ok){setSyncStatus('synced');showToast(editId?'수정 완료 ✔ 시트 반영됨':'등록 완료 ✔ 시트 반영됨','success');}
+      else{throw new Error(r.error);}
+    }catch(e){
+      setSyncStatus('error','동기화 오류');
+      showToast('로컬 저장됨 (시트 동기화 실패: '+e.message+')','warning');
+    }
+  } else {
+    showToast(editId?'매물이 수정되었습니다.':'매물이 등록되었습니다.','success');
+  }
+}
+
+function viewProperty(id) {
+  const p=loadProperties().find(x=>x.id===id); if(!p) return;
+  const landlord=loadLandlords().find(l=>l.id===p.landlordId);
+  const landlordStr=landlord?`${landlord.name} (${landlord.phone})`:'-';
+  const priceStr=p.dealType==='전세'?`전세 ${fmtMoney(p.deposit)}만원`:`보증금 ${fmtMoney(p.deposit)}만 / 월세 ${fmtMoney(p.rent)}만 / 관리비 ${fmtMoney(p.maintenance)}만`;
+  document.getElementById('detailTitle').textContent=`${p.id} — ${p.address}`;
+  document.getElementById('detailBody').innerHTML=`
+    <div class="detail-grid">
+      <div class="detail-item"><label>매물번호</label><span>${p.id}</span></div>
+      <div class="detail-item"><label>등록일</label><span>${p.date||'-'}</span></div>
+      <div class="detail-item"><label>구</label><span>${p.region||'-'}</span></div>
+      <div class="detail-item"><label>동</label><span>${p.dong||'-'}</span></div>
+      <div class="detail-item"><label>상태</label><span><span class="badge badge-${p.status}">${p.status}</span></span></div>
+      <div class="detail-item full"><label>상세주소</label><span>${p.address}</span></div>
+      <div class="detail-item"><label>건물명</label><span>${p.buildingName||'-'}</span></div>
+      <div class="detail-item"><label>호수</label><span>${p.unit||'-'}</span></div>
+      <hr class="detail-divider">
+      <div class="detail-item"><label>건물유형</label><span>${p.buildingType||'-'}</span></div>
+      <div class="detail-item"><label>전용면적</label><span>${p.area?p.area+'㎡':'-'}</span></div>
+      <div class="detail-item"><label>층/총층</label><span>${p.floor||'-'}</span></div>
+      <div class="detail-item"><label>방향</label><span>${p.direction||'-'}</span></div>
+      <div class="detail-item"><label>주차</label><span>${p.parking||'-'}</span></div>
+      <div class="detail-item"><label>옵션</label><span>${p.option||'-'}</span></div>
+      <hr class="detail-divider">
+      <div class="detail-item"><label>거래유형</label><span><span class="badge badge-${p.dealType}">${p.dealType||'-'}</span></span></div>
+      <div class="detail-item full"><label>가격 조건</label><span>${priceStr}</span></div>
+      <div class="detail-item"><label>입주가능일</label><span>${p.moveIn||'-'}</span></div>
+      <hr class="detail-divider">
+      <div class="detail-item full"><label>임대인</label><span>${landlordStr}</span></div>
+      <div class="detail-item"><label>의뢰형태</label><span>${p.commission||'-'}</span></div>
+      <div class="detail-item"><label>등기부확인일</label><span>${p.registryDate||'-'}</span></div>
+      <div class="detail-item"><label>사진촬영</label><span>${p.photo==='Y'?'✅ 완료':'⬜ 미완료'}</span></div>
+      <div class="detail-item"><label>광고채널</label><span>${p.adChannel||'-'}</span></div>
+      <div class="detail-item full"><label>📸 사진 링크</label><span>${p.photoLink?`<a href="${p.photoLink}" target="_blank" style="color:var(--primary);text-decoration:underline">📂 사진 폴더 열기</a>`:'없음'}</span></div>
+      <div class="detail-item full"><label>비고/메모</label><span style="white-space:pre-wrap">${p.memo||'-'}</span></div>
+    </div>`;
+  document.getElementById('detailEditBtn').onclick=()=>{ closeModal('detailModal'); openPropertyModal(id); };
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function deleteProperty(id) {
+  const p=loadProperties().find(x=>x.id===id);
+  document.getElementById('confirmTitle').textContent='매물을 삭제하시겠습니까?';
+  document.getElementById('confirmMsg').textContent=`${p?.address||id} — 이 작업은 되돌릴 수 없습니다.`;
+  document.getElementById('confirmBtn').onclick=async()=>{
+    const props=loadProperties().filter(x=>x.id!==id);
+    saveProperties(props);
+    closeModal('confirmModal');
+    renderPropertyTable();
+    updateCount();
+    if(SheetAPI.isConfigured()){
+      setSyncStatus('syncing');
+      try{await SheetAPI.post('deleteProperty',{id});setSyncStatus('synced');showToast('삭제 완료 ✔ 시트 반영됨');}
+      catch(e){setSyncStatus('error');showToast('로컬 삭제됨 (시트 동기화 실패)','warning');}
+    } else {showToast('매물이 삭제되었습니다.');}
+  };
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ============================================================
+// LANDLORDS
+// ============================================================
+function openLandlordModal(id=null) {
+  document.getElementById('editLandlordId').value='';
+  document.getElementById('landlordModalTitle').textContent='임대인 등록';
+  ['l_name','l_phone','l_addr','l_route','l_memo'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('l_relation').value='신규';
+  if(id){
+    const l=loadLandlords().find(x=>x.id===id); if(!l) return;
+    document.getElementById('editLandlordId').value=l.id;
+    document.getElementById('landlordModalTitle').textContent='임대인 수정';
+    document.getElementById('l_name').value=l.name||'';
+    document.getElementById('l_phone').value=l.phone||'';
+    document.getElementById('l_addr').value=l.addr||'';
+    document.getElementById('l_route').value=l.route||'';
+    document.getElementById('l_relation').value=l.relation||'신규';
+    document.getElementById('l_memo').value=l.memo||'';
+  }
+  document.getElementById('landlordModal').classList.add('open');
+}
+
+async function saveLandlord() {
+  const name=document.getElementById('l_name').value.trim();
+  if(!name){showToast('성명을 입력해주세요.','error');return;}
+  const lands=loadLandlords();
+  const editId=document.getElementById('editLandlordId').value;
+  const obj={
+    id:editId||genLandlordId(lands),
+    name,
+    phone:document.getElementById('l_phone').value,
+    addr:document.getElementById('l_addr').value,
+    route:document.getElementById('l_route').value,
+    relation:document.getElementById('l_relation').value,
+    memo:document.getElementById('l_memo').value,
+    createdAt:editId?(lands.find(l=>l.id===editId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
+    updatedAt:new Date().toISOString()
+  };
+  if(editId){const idx=lands.findIndex(l=>l.id===editId);if(idx!==-1)lands[idx]=obj;else lands.push(obj);}
+  else{lands.push(obj);}
+  saveLandlords(lands);
+  closeModal('landlordModal');
+  renderLandlordGrid();
+  updateCount();
+
+  if(SheetAPI.isConfigured()){
+    setSyncStatus('syncing');
+    try{const r=await SheetAPI.post('saveLandlord',obj);if(r.ok){setSyncStatus('synced');showToast(editId?'수정 완료 ✔ 시트 반영됨':'등록 완료 ✔ 시트 반영됨','success');}else throw new Error(r.error);}
+    catch(e){setSyncStatus('error');showToast('로컬 저장됨 (시트 동기화 실패)','warning');}
+  } else {showToast(editId?'임대인 정보가 수정되었습니다.':'임대인이 등록되었습니다.','success');}
+}
+
+function renderLandlordGrid() {
+  const lands=loadLandlords();
+  const props=loadProperties();
+  const q=(document.getElementById('landlordSearch').value||'').toLowerCase();
+  const rel=document.getElementById('filterRelation').value;
+  let filtered=lands.filter(l=>{
+    if(rel&&l.relation!==rel)return false;
+    if(q&&!`${l.name} ${l.phone} ${l.addr}`.toLowerCase().includes(q))return false;
+    return true;
+  });
+  const grid=document.getElementById('landlordGrid');
+  if(!filtered.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-sm)">등록된 임대인이 없습니다.</div>';return;}
+  grid.innerHTML='';
+  filtered.forEach(l=>{
+    const propCount=props.filter(p=>p.landlordId===l.id).length;
+    const activeCount=props.filter(p=>p.landlordId===l.id&&p.status==='광고중').length;
+    const card=document.createElement('div');
+    card.className='landlord-card';
+    card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><div class="name">${l.name}</div><span class="badge-relation badge-${l.relation}">${l.relation}</span></div>
+      <div class="phone">📱 ${l.phone}</div>
+      <div class="meta">${l.addr?`📍 ${truncate(l.addr,30)}<br>`:''}${l.route?`경로: ${l.route}<br>`:''}🏠 보유매물 ${propCount}건 (광고중 ${activeCount}건)${l.memo?`<br><em>${truncate(l.memo,35)}</em>`:''}</div>
+      <div class="actions"><button class="btn btn-secondary btn-sm" onclick="openLandlordModal('${l.id}')">수정</button><button class="btn btn-danger btn-sm" onclick="deleteLandlord('${l.id}')">삭제</button></div>`;
+    grid.appendChild(card);
+  });
+}
+
+function deleteLandlord(id) {
+  const l=loadLandlords().find(x=>x.id===id);
+  document.getElementById('confirmTitle').textContent='임대인을 삭제하시겠습니까?';
+  document.getElementById('confirmMsg').textContent=`${l?.name||id} — 연결된 매물의 임대인 정보가 해제됩니다.`;
+  document.getElementById('confirmBtn').onclick=async()=>{
+    const lands=loadLandlords().filter(x=>x.id!==id);
+    saveLandlords(lands);
+    closeModal('confirmModal');
+    renderLandlordGrid();
+    updateCount();
+    if(SheetAPI.isConfigured()){
+      setSyncStatus('syncing');
+      try{await SheetAPI.post('deleteLandlord',{id});setSyncStatus('synced');showToast('삭제 완료 ✔ 시트 반영됨');}
+      catch(e){setSyncStatus('error');showToast('로컬 삭제됨 (시트 동기화 실패)','warning');}
+    } else {showToast('임대인이 삭제되었습니다.');}
+  };
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ============================================================
+// SETTINGS
+// ===================================
+// ============================================================
+// SETTINGS FUNCTIONS
+// ============================================================
+function openSettings() {
+  const c = getConfig();
+  document.getElementById('apiUrl').value    = c.apiUrl    || '';
+  document.getElementById('apiSecret').value = c.secret    || '';
+  document.getElementById('kakaoKey').value  = c.kakaoKey  || '';
+  document.getElementById('connectionResult').innerHTML = '';
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+async function saveSettings() {
+  const apiUrl   = document.getElementById('apiUrl').value.trim();
+  const secret   = document.getElementById('apiSecret').value.trim();
+  const kakaoKey = document.getElementById('kakaoKey').value.trim();
+  storeConfig({ apiUrl, secret, kakaoKey });
+  closeModal('settingsModal');
+  showToast('설정이 저장되었습니다.', 'success');
+  if (apiUrl) { await syncFromSheets(); }
+}
+
+async function testConnection() {
+  const apiUrl = document.getElementById('apiUrl').value.trim();
+  const secret = document.getElementById('apiSecret').value.trim();
+  const el = document.getElementById('connectionResult');
+  if (!apiUrl) { el.innerHTML='<span style="color:var(--danger)">URL을 입력해주세요.</span>'; return; }
+  el.innerHTML = '연결 테스트 중...';
+  try {
+    storeConfig({ ...getConfig(), apiUrl, secret });
+    const r = await SheetAPI.ping();
+    if (r.ok) {
+      el.innerHTML = '<span style="color:#0e9f6e">✅ 연결 성공! Apps Script가 정상 응답했습니다.</span>';
+    } else {
+      el.innerHTML = `<span style="color:var(--danger)">❌ 오류: ${r.error||'알 수 없는 오류'}</span>`;
+    }
+  } catch(e) {
+    el.innerHTML = `<span style="color:var(--danger)">❌ 연결 실패: ${e.message}</span>`;
+  }
+}
+
+async function pushLocalToSheet() {
+  if (!SheetAPI.isConfigured()) { showToast('먼저 API URL을 저장해주세요.', 'error'); return; }
+  const btn = document.getElementById('pushBtn');
+  btn.disabled = true; btn.textContent = '업로드 중...';
+  try {
+    const props  = loadProperties();
+    const lands  = loadLandlords();
+    const result = await SheetAPI.post('syncAll', { properties: props, landlords: lands });
+    if (result.ok) { showToast(`시트에 업로드 완료! 매물 ${props.length}건, 임대인 ${lands.length}명`, 'success'); }
+    else throw new Error(result.error);
+  } catch(e) { showToast('업로드 실패: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = '📤 로컬 데이터 → 시트에 올리기'; }
+}
+
+// ============================================================
+// SYNC
+// ============================================================
+async function syncFromSheets() {
+  if (!SheetAPI.isConfigured()) { setSyncStatus('offline'); return; }
+  setSyncStatus('syncing');
+  try {
+    const r = await SheetAPI.getAll();
+    if (r.properties) saveProperties(r.properties);
+    if (r.landlords)  saveLandlords(r.landlords);
+    setSyncStatus('synced');
+    updateCount();
+  } catch(e) {
+    setSyncStatus('error', '동기화 실패');
+    showToast('구글 시트 동기화 실패: ' + e.message, 'warning');
+  }
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+const CALL_KEY = 'koyeon_calls_v1';
+
+function fmtMoney(v) {
+  const n = parseInt(v, 10);
+  if (!v || isNaN(n) || n === 0) return '-';
+  if (n >= 10000) return `${Math.floor(n/10000)}억${n%10000?` ${n%10000}만`:''}`;
+  return `${n}만`;
+}
+
+function truncate(str, len) {
+  if (!str) return '-';
+  return str.length > len ? str.slice(0, len) + '…' : str;
+}
+
+function genId(prefix, arr) {
+  const nums = arr.map(x => parseInt((x.id||'').replace(prefix,''),10)).filter(n=>!isNaN(n));
+  const next = nums.length ? Math.max(...nums)+1 : 1;
+  return prefix + String(next).padStart(5,'0');
+}
+
+function genLandlordId(arr) {
+  const nums = arr.map(x => parseInt((x.id||'').replace('L',''),10)).filter(n=>!isNaN(n));
+  const next = nums.length ? Math.max(...nums)+1 : 1;
+  return 'L' + String(next).padStart(4,'0');
+}
+
+function updateCount() {
+  const props = loadProperties();
+  const lands = loadLandlords();
+  const el = document.getElementById('dataCount');
+  if (el) el.textContent = `매물 ${props.length}건 · 임대인 ${lands.length}명`;
+}
+
+let _toastTimer;
+function showToast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function closeModal(id) {
+  document.getElementById(id)?.classList.remove('open');
+}
+
+// ============================================================
+// EXPORT / IMPORT
+// ============================================================
+function exportData() {
+  const data = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    properties: loadProperties(),
+    landlords:  loadLandlords(),
+    schedules:  loadSchedules(),
+    requests:   loadRequests()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `고연부동산_백업_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('백업 파일이 다운로드되었습니다.', 'success');
+}
+
+function handleImport(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.properties && !data.landlords) { showToast('올바른 백업 파일이 아닙니다.', 'error'); return; }
+      if (data.properties) saveProperties(data.properties);
+      if (data.landlords)  saveLandlords(data.landlords);
+      if (data.schedules)  saveSchedules(data.schedules);
+      if (data.requests)   saveRequests(data.requests);
+      renderDashboard();
+      updateCount();
+      showToast(`복원 완료: 매물 ${(data.properties||[]).length}건, 임대인 ${(data.landlords||[]).length}명`, 'success');
+    } catch { showToast('파일을 읽는 중 오류가 발생했습니다.', 'error'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============================================================
+// SURVEY IMPORT (조사표 엑셀 → 매물)
+// ============================================================
+function handleSurveyImport(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const imported = parseSurveyRows(rows);
+      if (!imported.length) { showToast('가져올 데이터가 없습니다.', 'warning'); return; }
+      const props = loadProperties();
+      let added = 0;
+      imported.forEach(p => {
+        const dup = props.find(x => x.address === p.address && x.unit === p.unit);
+        if (!dup) { props.push({ ...p, id: genId('P', props) }); added++; }
+      });
+      saveProperties(props);
+      renderPropertyTable();
+      updateCount();
+      showToast(`조사표 ${added}건 가져오기 완료!`, 'success');
+    } catch(err) { showToast('파일 읽기 오류: ' + err.message, 'error'); }
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value = '';
+}
+
+function parseSurveyRows(rows) {
+  if (rows.length < 2) return [];
+  const header = rows[0].map(h => String(h).trim());
+  const COL = {
+    date:        ['등록일','날짜'],
+    address:     ['주소','상세주소','소재지'],
+    buildingName:['건물명','빌딩명'],
+    unit:        ['호수','호실'],
+    region:      ['구','지역','구동'],
+    buildingType:['유형','건물유형'],
+    dealType:    ['거래유형','거래'],
+    deposit:     ['보증금'],
+    rent:        ['월세'],
+    area:        ['면적','전용면적'],
+    floor:       ['층'],
+    option:      ['옵션'],
+    status:      ['상태'],
+    memo:        ['메모','비고']
+  };
+  const idx = {};
+  Object.entries(COL).forEach(([key, candidates]) => {
+    for (const c of candidates) {
+      const i = header.findIndex(h => h.includes(c));
+      if (i >= 0) { idx[key] = i; break; }
+    }
+  });
+  const today = new Date().toISOString().slice(0,10);
+  return rows.slice(1).map(row => {
+    const g = k => (idx[k] !== undefined ? String(row[idx[k]]).trim() : '');
+    if (!g('address') && !g('buildingName')) return null;
+    return {
+      date:         g('date') || today,
+      address:      g('address'),
+      buildingName: g('buildingName'),
+      unit:         g('unit'),
+      region:       g('region'),
+      buildingType: g('buildingType'),
+      dealType:     g('dealType'),
+      deposit:      g('deposit'),
+      rent:         g('rent'),
+      area:         g('area'),
+      floor:        g('floor'),
+      option:       g('option'),
+      status:       g('status') || '매물확보',
+      memo:         g('memo'),
+      updatedAt:    new Date().toISOString()
+    };
+  }).filter(Boolean);
+}
+
+// ============================================================
+// SCHEDULE DATA
+// ============================================================
+function loadSchedules() {
+  try { return JSON.parse(localStorage.getItem(SCHEDULE_KEY)) || []; }
+  catch { return []; }
+}
+function saveSchedules(data) { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(data)); }
+
+function loadRequests() {
+  try { return JSON.parse(localStorage.getItem(REQUEST_KEY)) || []; }
+  catch { return []; }
+}
+function saveRequests(data) { localStorage.setItem(REQUEST_KEY, JSON.stringify(data)); }
+
+// ============================================================
+// CALENDAR
+// ============================================================
+let _calYear  = new Date().getFullYear();
+let _calMonth = new Date().getMonth(); // 0-based
+
+function changeCalMonth(dir) {
+  _calMonth += dir;
+  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+  if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const now   = new Date();
+  const today = now.toISOString().slice(0,10);
+  const y     = _calYear, m = _calMonth;
+
+  document.getElementById('calMonthLabel').textContent = `${y}년 ${m+1}월`;
+
+  // 요일 헤더
+  const daysEl = document.getElementById('calDayHeaders');
+  daysEl.innerHTML = ['일','월','화','수','목','금','토'].map(d =>
+    `<div style="text-align:center;font-size:11px;font-weight:600;color:var(--text-sm);padding:4px 0">${d}</div>`
+  ).join('');
+
+  // 이 달 일정 로드
+  const ym = `${y}-${String(m+1).padStart(2,'0')}`;
+  const scheds = loadSchedules().filter(s => s.date && s.date.startsWith(ym));
+
+  // 달력 셀
+  const first = new Date(y, m, 1).getDay(); // 0=Sun
+  const last  = new Date(y, m+1, 0).getDate();
+  const grid  = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  // 빈 칸 채우기
+  for (let i = 0; i < first; i++) {
+    grid.innerHTML += `<div style="min-height:80px;background:var(--neutral-light);border-radius:6px;opacity:0.4"></div>`;
+  }
+  for (let d = 1; d <= last; d++) {
+    const dateStr = `${ym}-${String(d).padStart(2,'0')}`;
+    const daySch  = scheds.filter(s => s.date === dateStr);
+    const isToday = dateStr === today;
+    const dow     = new Date(y, m, d).getDay();
+    const color   = dow===0?'#ef4444':dow===6?'#1d4ed8':'var(--text)';
+    const bgc     = isToday ? 'rgba(59,130,246,.12)' : 'var(--card)';
+    const brd     = isToday ? '2px solid var(--primary)' : '1px solid var(--border)';
+    const EVENT_C = {'방문약속':'#1d4ed8','계약일':'#065f46','임대차만료':'#92400e','기타':'#6b7280'};
+    const dots = daySch.map(s =>
+      `<div onclick="openScheduleModal('${s.id}')" style="font-size:10px;padding:1px 4px;border-radius:3px;cursor:pointer;background:${EVENT_C[s.type]||'#6b7280'}22;color:${EVENT_C[s.type]||'#6b7280'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-top:1px">${s.title||s.type}</div>`
+    ).join('');
+    grid.innerHTML += `<div style="min-height:80px;background:${bgc};border:${brd};border-radius:6px;padding:4px;cursor:pointer" onclick="openScheduleModal(null,'${dateStr}')">
+      <div style="font-size:12px;font-weight:${isToday?700:500};color:${color}">${d}</div>
+      ${dots}
+    </div>`;
+  }
+
+  // 우측 이벤트 목록
+  const listEl = document.getElementById('eventList');
+  if (listEl) {
+    const monthScheds = scheds.sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''));
+    if (!monthScheds.length) {
+      listEl.innerHTML = '<div style="font-size:12px;color:var(--text-sm);padding:8px 0">이번 달 일정이 없습니다.</div>';
+    } else {
+      const EVENT_C = {'방문약속':'#1d4ed8','계약일':'#065f46','임대차만료':'#92400e','기타':'#6b7280'};
+      listEl.innerHTML = monthScheds.map(s =>
+        `<div style="padding:8px;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;cursor:pointer;background:var(--card)" onclick="openScheduleModal('${s.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+            <span style="font-size:12px;font-weight:600">${s.title||s.type}</span>
+            <span style="font-size:11px;padding:1px 6px;border-radius:10px;background:${EVENT_C[s.type]||'#6b7280'}22;color:${EVENT_C[s.type]||'#6b7280'}">${s.type}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-sm)">${s.date}${s.time?' '+s.time:''}</div>
+          ${s.memo?`<div style="font-size:11px;color:var(--text-sm);margin-top:2px">${truncate(s.memo,40)}</div>`:''}
+        </div>`
+      ).join('');
+    }
+  }
+}
+
+function openScheduleModal(id=null, date=null) {
+  // 드롭다운 채우기
+  const pSel = document.getElementById('sch_propertyId');
+  const lSel = document.getElementById('sch_landlordId');
+  pSel.innerHTML = '<option value="">없음</option>';
+  lSel.innerHTML = '<option value="">없음</option>';
+  loadProperties().forEach(p => pSel.innerHTML += `<option value="${p.id}">${p.id} ${truncate(p.address,20)}</option>`);
+  loadLandlords().forEach(l => lSel.innerHTML += `<option value="${l.id}">${l.name} (${l.phone})</option>`);
+
+  // 폼 초기화
+  document.getElementById('editScheduleId').value  = '';
+  document.getElementById('sch_title').value       = '';
+  document.getElementById('sch_type').value        = '방문약속';
+  document.getElementById('sch_date').value        = date || new Date().toISOString().slice(0,10);
+  document.getElementById('sch_time').value        = '';
+  document.getElementById('sch_propertyId').value  = '';
+  document.getElementById('sch_landlordId').value  = '';
+  document.getElementById('sch_memo').value        = '';
+  document.getElementById('scheduleModalTitle').textContent = '일정 등록';
+
+  if (id) {
+    const s = loadSchedules().find(x => x.id === id); if (!s) return;
+    document.getElementById('editScheduleId').value  = s.id;
+    document.getElementById('sch_title').value       = s.title   || '';
+    document.getElementById('sch_type').value        = s.type    || '기타';
+    document.getElementById('sch_date').value        = s.date    || '';
+    document.getElementById('sch_time').value        = s.time    || '';
+    document.getElementById('sch_propertyId').value  = s.propertyId || '';
+    document.getElementById('sch_landlordId').value  = s.landlordId || '';
+    document.getElementById('sch_memo').value        = s.memo    || '';
+    document.getElementById('scheduleModalTitle').textContent = '일정 수정';
+  }
+  document.getElementById('scheduleModal').classList.add('open');
+}
+
+function saveSchedule() {
+  const date = document.getElementById('sch_date').value;
+  if (!date) { showToast('날짜를 입력해주세요.', 'error'); return; }
+  const scheds  = loadSchedules();
+  const editId  = document.getElementById('editScheduleId').value;
+  const obj = {
+    id:         editId || 'S' + Date.now(),
+    title:      document.getElementById('sch_title').value.trim() || document.getElementById('sch_type').value,
+    type:       document.getElementById('sch_type').value,
+    date,
+    time:       document.getElementById('sch_time').value,
+    propertyId: document.getElementById('sch_propertyId').value,
+    landlordId: document.getElementById('sch_landlordId').value,
+    memo:       document.getElementById('sch_memo').value
+  };
+  if (editId) {
+    const idx = scheds.findIndex(s => s.id === editId);
+    if (idx !== -1) scheds[idx] = obj; else scheds.push(obj);
+  } else { scheds.push(obj); }
+  saveSchedules(scheds);
+  closeModal('scheduleModal');
+  renderCalendar();
+  showToast(editId ? '일정이 수정되었습니다.' : '일정이 등록되었습니다.', 'success');
+}
+
+function deleteSchedule(id) {
+  saveSchedules(loadSchedules().filter(s => s.id !== id));
+  closeModal('scheduleModal');
+  renderCalendar();
+  showToast('일정이 삭제되었습니다.');
+}
+
+// ============================================================
+// CALL MANAGEMENT
+// ============================================================
+function renderCallPage() {
+  const filter  = document.getElementById('callFilter')?.value || '';
+  const today   = new Date();
+  const lands   = loadLandlords();
+  const props   = loadProperties();
+
+  // 통계
+  const statsEl = document.getElementById('callStats');
+  if (statsEl) {
+    const urgent = lands.filter(l => {
+      const interval = l.callInterval || 60;
+      if (!l.lastCallDate) return true;
+      return Math.floor((today - new Date(l.lastCallDate)) / 86400000) >= interval;
+    }).length;
+    const warn = lands.filter(l => {
+      const interval = l.callInterval || 60;
+      if (!l.lastCallDate) return false;
+      const days = Math.floor((today - new Date(l.lastCallDate)) / 86400000);
+      return days >= Math.round(interval * 0.7) && days < interval;
+    }).length;
+    statsEl.innerHTML = `
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:#ef4444">${urgent}</div>
+        <div style="font-size:11px;color:#7f1d1d;margin-top:2px">🔴 연락 필요</div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:#d97706">${warn}</div>
+        <div style="font-size:11px;color:#78350f;margin-top:2px">🟡 주의 (70% 경과)</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:#16a34a">${lands.length - urgent - warn}</div>
+        <div style="font-size:11px;color:#14532d;margin-top:2px">🟢 양호</div>
+      </div>`;
+  }
+
+  // 임대인 목록
+  const gridEl = document.getElementById('callGrid');
+  if (!gridEl) return;
+
+  const classified = lands.map(l => {
+    const interval = l.callInterval || 60;
+    let days = null;
+    let state = 'ok';
+    if (!l.lastCallDate) { state = 'urgent'; }
+    else {
+      days = Math.floor((today - new Date(l.lastCallDate)) / 86400000);
+      if (days >= interval) state = 'urgent';
+      else if (days >= Math.round(interval * 0.7)) state = 'warn';
+    }
+    return { ...l, days, state, propCount: props.filter(p => p.landlordId === l.id).length };
+  });
+
+  let filtered = classified;
+  if (filter === 'urgent') filtered = classified.filter(l => l.state === 'urgent');
+  else if (filter === 'warn') filtered = classified.filter(l => l.state === 'warn');
+  else if (filter === 'ok') filtered = classified.filter(l => l.state === 'ok');
+  filtered = filtered.sort((a,b) => (a.days??999) > (b.days??999) ? -1 : 1);
+
+  if (!filtered.length) {
+    gridEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-sm)">조건에 맞는 임대인이 없습니다.</div>';
+    return;
+  }
+
+  const STATE = { urgent: { bg:'#fef2f2', border:'#fca5a5', dot:'#ef4444', label:'연락 필요' },
+                  warn:   { bg:'#fffbeb', border:'#fcd34d', dot:'#d97706', label:'주의'     },
+                  ok:     { bg:'#f0fdf4', border:'#86efac', dot:'#16a34a', label:'양호'     } };
+
+  gridEl.innerHTML = filtered.map(l => {
+    const st = STATE[l.state];
+    const daysStr = l.lastCallDate
+      ? (l.days === 0 ? '오늘 통화' : `${l.days}일 전 통화`)
+      : '통화 이력 없음';
+    return `<div style="background:${st.bg};border:1px solid ${st.border};border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${st.dot};flex-shrink:0;display:inline-block"></span>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-weight:700;font-size:14px">${l.name}</span>
+          <span style="font-size:11px;color:var(--text-sm)">${l.phone}</span>
+          <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:${st.dot}22;color:${st.dot}">${st.label}</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-sm);margin-top:2px">
+          📞 ${daysStr} &nbsp;|&nbsp; 🏠 매물 ${l.propCount}건 &nbsp;|&nbsp; 목표: ${l.callInterval||60}일마다
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-primary btn-sm" onclick="logCall('${l.id}')">✅ 통화 완료</button>
+        <button class="btn btn-secondary btn-sm" onclick="setCallInterval('${l.id}')">주기 변경</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function logCall(id) {
+  const lands = loadLandlords();
+  const idx = lands.findIndex(l => l.id === id);
+  if (idx === -1) return;
+  lands[idx].lastCallDate = new Date().toISOString().slice(0,10);
+  saveLandlords(lands);
+  renderCallPage();
+  renderDashboard();
+  showToast(`${lands[idx].name} — 오늘 통화 기록됨`, 'success');
+}
+
+function setCallInterval(id) {
+  const lands = loadLandlords();
+  const l = lands.find(x => x.id === id); if (!l) return;
+  const val = prompt(`${l.name}의 통화 주기를 설정하세요 (일 단위, 현재: ${l.callInterval||60}일):`, l.callInterval||60);
+  if (val === null) return;
+  const n = parseInt(val, 10);
+  if (isNaN(n) || n < 1) { showToast('1 이상의 숫자를 입력해주세요.', 'error'); return; }
+  l.callInterval = n;
+  saveLandlords(lands);
+  renderCallPage();
+  showToast(`${l.name} 통화 주기: ${n}일`, 'success');
+}
+
+// ============================================================
+// REQUEST MANAGEMENT
+// ============================================================
+function renderRequestTable() {
+  const statusF = document.getElementById('requestStatusFilter')?.value || '';
+  const typeF   = document.getElementById('requestTypeFilter')?.value   || '';
+  let reqs = loadRequests();
+  if (statusF) reqs = reqs.filter(r => r.status === statusF);
+  if (typeF)   reqs = reqs.filter(r => r.type   === typeF);
+  reqs = reqs.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  const tbody = document.getElementById('requestTableBody');
+  const footer = document.querySelector('#page-requests .table-footer');
+  if (!tbody) return;
+
+  if (!reqs.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="no-data">등록된 의뢰가 없습니다.</td></tr>';
+    if (footer) footer.textContent = '0건';
+    return;
+  }
+
+  const STATUS_C = { '접수중':'#1d4ed8','진행중':'#d97706','계약완료':'#16a34a','취소':'#6b7280' };
+  tbody.innerHTML = reqs.map((r, i) => `
+    <tr>
+      <td style="font-size:12px;color:var(--text-sm)">${i+1}</td>
+      <td>${r.date||'-'}</td>
+      <td style="font-weight:600">${r.name||'-'}</td>
+      <td>${r.phone||'-'}</td>
+      <td>${r.type||'-'}</td>
+      <td>${r.dealType||'-'}</td>
+      <td>${truncate(r.region,15)}</td>
+      <td>${r.depositMax?fmtMoney(r.depositMax):''}${r.rentMax&&r.dealType!=='전세'?'/'+fmtMoney(r.rentMax):''}</td>
+      <td>${r.moveIn||'-'}</td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${STATUS_C[r.status]||'#6b7280'}22;color:${STATUS_C[r.status]||'#6b7280'}">${r.status}</span></td>
+      <td class="action-btns">
+        <button class="icon-btn" onclick="openRequestModal('${r.id}')" title="수정">✏️</button>
+        <button class="icon-btn" onclick="deleteRequest('${r.id}')" title="삭제">🗑</button>
+      </td>
+    </tr>`).join('');
+  if (footer) footer.textContent = `${reqs.length}건`;
+}
+
+function openRequestModal(id=null) {
+  document.getElementById('editRequestId').value   = '';
+  document.getElementById('req_name').value        = '';
+  document.getElementById('req_phone').value       = '';
+  document.getElementById('req_date').value        = new Date().toISOString().slice(0,10);
+  document.getElementById('req_status').value      = '접수중';
+  document.getElementById('req_type').value        = '';
+  document.getElementById('req_dealType').value    = '';
+  document.getElementById('req_region').value      = '';
+  document.getElementById('req_depositMax').value  = '';
+  document.getElementById('req_rentMax').value     = '';
+  document.getElementById('req_moveIn').value      = '';
+  document.getElementById('req_memo').value        = '';
+  document.getElementById('requestModalTitle').textContent = '의뢰 등록';
+
+  if (id) {
+    const r = loadRequests().find(x => x.id === id); if (!r) return;
+    document.getElementById('editRequestId').value   = r.id;
+    document.getElementById('req_name').value        = r.name       || '';
+    document.getElementById('req_phone').value       = r.phone      || '';
+    document.getElementById('req_date').value        = r.date       || '';
+    document.getElementById('req_status').value      = r.status     || '접수중';
+    document.getElementById('req_type').value        = r.type       || '';
+    document.getElementById('req_dealType').value    = r.dealType   || '';
+    document.getElementById('req_region').value      = r.region     || '';
+    document.getElementById('req_depositMax').value  = r.depositMax || '';
+    document.getElementById('req_rentMax').value     = r.rentMax    || '';
+    document.getElementById('req_moveIn').value      = r.moveIn     || '';
+    document.getElementById('req_memo').value        = r.memo       || '';
+    document.getElementById('requestModalTitle').textContent = '의뢰 수정';
+  }
+  document.getElementById('requestModal').classList.add('open');
+}
+
+function saveRequest() {
+  const name = document.getElementById('req_name').value.trim();
+  if (!name) { showToast('이름을 입력해주세요.', 'error'); return; }
+  const reqs   = loadRequests();
+  const editId = document.getElementById('editRequestId').value;
+  const obj = {
+    id:         editId || 'R' + Date.now(),
+    name,
+    phone:      document.getElementById('req_phone').value,
+    date:       document.getElementById('req_date').value,
+    status:     document.getElementById('req_status').value,
+    type:       document.getElementById('req_type').value,
+    dealType:   document.getElementById('req_dealType').value,
+    region:     document.getElementById('req_region').value,
+    depositMax: document.getElementById('req_depositMax').value,
+    rentMax:    document.getElementById('req_rentMax').value,
+    moveIn:     document.getElementById('req_moveIn').value,
+    memo:       document.getElementById('req_memo').value
+  };
+  if (editId) {
+    const idx = reqs.findIndex(r => r.id === editId);
+    if (idx !== -1) reqs[idx] = obj; else reqs.push(obj);
+  } else { reqs.push(obj); }
+  saveRequests(reqs);
+  closeModal('requestModal');
+  renderRequestTable();
+  showToast(editId ? '의뢰가 수정되었습니다.' : '의뢰가 등록되었습니다.', 'success');
+}
+
+function deleteRequest(id) {
+  const r = loadRequests().find(x => x.id === id);
+  document.getElementById('confirmTitle').textContent = '의뢰를 삭제하시겠습니까?';
+  document.getElementById('confirmMsg').textContent   = `${r?.name||id} — 이 작업은 되돌릴 수 없습니다.`;
+  document.getElementById('confirmBtn').onclick = () => {
+    saveRequests(loadRequests().filter(x => x.id !== id));
+    closeModal('confirmModal');
+    renderRequestTable();
+    showToast('의뢰가 삭제되었습니다.');
+  };
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ============================================================
+// PUBLIC RECORDS (공부열람 바로가기)
+// ============================================================
+function openRecord(type) {
+  const rawAddr = document.getElementById('recordAddrInput')?.value?.trim() || '';
+  const addr = encodeURIComponent(rawAddr);
+  const urls = {
+    eais:        'https://cloud.eais.go.kr',
+    eum:         `https://www.eum.go.kr/web/ar/lu/luLandDet.jsp${addr?'?addr='+addr:''}`,
+    realtyprice: 'https://www.realtyprice.kr',
+    iros:        'https://www.iros.go.kr',
+    rtms:        'https://rt.molit.go.kr',
+    naver:       `https://map.naver.com/v5/search/${addr||''}`,
+    kab:         'https://www.applyhome.co.kr',
+    hometax:     'https://www.hometax.go.kr',
+    wetax:       'https://www.wetax.go.kr'
+  };
+  const url = urls[type];
+  if (!url) return;
+  // 주소가 있으면 클립보드에 복사 후 사이트 열기
+  if (rawAddr) {
+    navigator.clipboard.writeText(rawAddr).then(() => {
+      showToast('주소가 복사됐습니다 — 사이트에서 Ctrl+V로 붙여넣으세요 📋', 'success');
+    }).catch(() => {});
+  }
+  window.open(url, '_blank');
+}
+
+// ============================================================
+// KAKAO MAP
+// ============================================================
+let _kakaoMapObj = null;
+let _kakaoMarkers = [];
+const GEOCACHE_KEY = 'koyeon_geocache_v1';
+
+function initMapPage() {
+  const cfg = getConfig();
+  if (!cfg.kakaoKey) {
+    document.getElementById('mapSetupMsg').style.display = 'flex';
+    document.getElementById('kakaoMapContainer').style.display = 'none';
+    document.getElementById('mapSidePanel').style.display = 'none';
+    document.getElementById('mapLegend').style.display = 'none';
+    return;
+  }
+  document.getElementById('mapSetupMsg').style.display = 'none';
+  document.getElementById('kakaoMapContainer').style.display = 'block';
+  document.getElementById('mapSidePanel').style.display = 'block';
+  document.getElementById('mapLegend').style.display = 'block';
+
+  if (!window.kakao || !window.kakao.maps) {
+    // 카카오 SDK 동적 로드
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${cfg.kakaoKey}&libraries=services&autoload=false`;
+    script.onload = () => {
+      kakao.maps.load(() => { _initKakaoMap(); renderMapPins(); });
+    };
+    document.head.appendChild(script);
+  } else {
+    _initKakaoMap();
+    renderMapPins();
+  }
+}
+
+function _initKakaoMap() {
+  if (_kakaoMapObj) return;
+  const container = document.getElementById('kakaoMapContainer');
+  const options = { center: new kakao.maps.LatLng(37.5665, 126.9780), level: 7 };
+  _kakaoMapObj = new kakao.maps.Map(container, options);
+}
+
+const PIN_COLORS = { '매물확보':'#1a56db','광고중':'#0e9f6e','예약':'#c27803','계약완료':'#6b7280','보류':'#e02424' };
+
+async function renderMapPins() {
+  if (!_kakaoMapObj || !window.kakao) return;
+
+  // 기존 핀 제거
+  _kakaoMarkers.forEach(m => m.setMap(null));
+  _kakaoMarkers = [];
+
+  const statusF = document.getElementById('mapStatusFilter')?.value || '';
+  const typeF   = document.getElementById('mapTypeFilter')?.value   || '';
+  let props = loadProperties();
+  if (statusF) props = props.filter(p => p.status === statusF);
+  if (typeF)   props = props.filter(p => p.buildingType === typeF);
+  props = props.filter(p => p.address);
+
+  // 사이드 패널 업데이트
+  const listEl  = document.getElementById('mapSideList');
+  const countEl = document.getElementById('mapSideCount');
+  if (countEl) countEl.textContent = `${props.length}건`;
+  if (listEl) {
+    listEl.innerHTML = props.map(p => {
+      const c = PIN_COLORS[p.status] || '#6b7280';
+      return `<div style="padding:8px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer;font-size:12px" onclick="viewProperty('${p.id}')">
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0;display:inline-block"></span>
+          <b>${p.id}</b>
+          <span class="badge badge-${p.status}" style="font-size:10px">${p.status}</span>
+        </div>
+        <div style="margin-top:3px;color:var(--text-sm)">${truncate(p.address,28)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  if (!props.length) { document.getElementById('mapStatusBadge').style.display='none'; return; }
+
+  const badge = document.getElementById('mapStatusBadge');
+  badge.style.display = 'block'; badge.textContent = '주소 검색 중...';
+
+  // 캐시 로드
+  let cache = {};
+  try { cache = JSON.parse(localStorage.getItem(GEOCACHE_KEY)) || {}; } catch {}
+
+  const geocoder = new kakao.maps.services.Geocoder();
+  let done = 0;
+
+  const geocode = addr => new Promise(resolve => {
+    if (cache[addr]) { resolve(cache[addr]); return; }
+    geocoder.addressSearch(addr, (result, status) => {
+      if (status === kakao.maps.services.Status.OK && result.length) {
+        const pos = { lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) };
+        cache[addr] = pos;
+        resolve(pos);
+      } else { resolve(null); }
+    });
+  });
+
+  for (const p of props) {
+    const pos = await geocode(p.address);
+    done++;
+    badge.textContent = `${done}/${props.length} 핀 배치 중...`;
+    if (!pos) continue;
+
+    const color = PIN_COLORS[p.status] || '#6b7280';
+    const markerImg = new kakao.maps.MarkerImage(
+      `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32"><path d="M12 0C5.4 0 0 5.4 0 12c0 7.2 12 20 12 20s12-12.8 12-20C24 5.4 18.6 0 12 0z" fill="${color}"/><circle cx="12" cy="12" r="5" fill="white"/></svg>`)}`,
+      new kakao.maps.Size(24, 32)
+    );
+    const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(pos.lat, pos.lng), map: _kakaoMapObj, image: markerImg });
+    const info = new kakao.maps.InfoWindow({
+      content: `<div style="padding:8px;min-width:150px;font-size:12px"><b>${p.id}</b> <span style="color:${color}">${p.status}</span><br>${truncate(p.address,25)}<br>${p.dealType} ${fmtMoney(p.deposit)}${p.dealType!=='전세'?'/'+fmtMoney(p.rent):''}</div>`
+    });
+    kakao.maps.event.addListener(marker, 'click', () => {
+      _kakaoMarkers.forEach(m => m._info?.close());
+      info.open(_kakaoMapObj, marker);
+    });
+    marker._info = info;
+    _kakaoMarkers.push(marker);
+  }
+
+  // 캐시 저장
+  try { localStorage.setItem(GEOCACHE_KEY, JSON.stringify(cache)); } catch {}
+
+  badge.textContent = `📍 ${_kakaoMarkers.length}개 핀 배치 완료`;
+  setTimeout(() => badge.style.display='none', 2000);
+}
+
+// ============================================================
+// PUBLIC RECORDS (공부열람 바로가기)
+// ============================================================
+function openRecord(type) {
+  const rawAddr = document.getElementById('recordAddrInput')?.value?.trim() || '';
+  const addr = encodeURIComponent(rawAddr);
+  const urls = {
+    eais:        'https://cloud.eais.go.kr',
+    eum:         `https://www.eum.go.kr/web/ar/lu/luLandDet.jsp${addr?'?addr='+addr:''}`,
+    realtyprice: 'https://www.realtyprice.kr',
+    iros:        'https://www.iros.go.kr',
+    rtms:        'https://rt.molit.go.kr',
+    naver:       `https://map.naver.com/v5/search/${addr||''}`,
+    kab:         'https://www.applyhome.co.kr',
+    hometax:     'https://www.hometax.go.kr',
+    wetax:       'https://www.wetax.go.kr'
+  };
+  const url = urls[type];
+  if (!url) return;
+  if (rawAddr) {
+    navigator.clipboard.writeText(rawAddr).then(() => {
+      showToast('주소가 복사됐습니다 — 사이트에서 Ctrl+V로 붙여넣으세요 📋', 'success');
+    }).catch(() => {});
+  }
+  window.open(url, '_blank');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async function init() {
+  setSyncStatus('offline');
+  updateCount();
+  renderDashboard();
+  await syncFromSheets();
+})();
+</script>
+</body>
+</html>e,
+    memo:document.getElementById('req_memo').value,
+    status:document.getElementById('req_status').value,
+    createdAt:editId?(reqs.find(r=>r.id===editId)?.createdAt||new Date().toISOString()):new Date().toISOString()
+  };
+  if(editId){const idx=reqs.findIndex(r=>r.id===editId);if(idx!==-1)reqs[idx]=obj;else reqs.push(obj);}
+  else{reqs.push(obj);}
+  saveRequests(reqs);
+  closeModal('requestModal');
+  renderRequestTable();
+  showToast(editId?'의뢰가 수정되었습니다.':'의뢰가 등록되었습니다.','success');
+}
+
+function deleteRequest(id){
+  const r=loadRequests().find(x=>x.id===id);
+  document.getElementById('confirmTitle').textContent='의뢰를 삭제하시겠습니까?';
+  document.getElementById('confirmMsg').textContent=`${r?.name||id} — 이 작업은 되돌릴 수 없습니다.`;
+  document.getElementById('confirmBtn').onclick=()=>{
+    saveRequests(loadRequests().filter(x=>x.id!==id));
+    closeModal('confirmModal');
+    renderRequestTable();
+    showToast('의뢰가 삭제되었습니다.');
+  };
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ============================================================
+// PUBLIC RECORDS
+// ============================================================
+function openRecord(type){
+  const addr=document.getElementById('recordAddrInput').value.trim();
+  const enc=encodeURIComponent(addr);
+  const urls={
+    eais:'https://cloud.eais.go.kr/moct/bci/aaa02/BCIAAA02L01',
+    eum:addr?`https://www.eum.go.kr/web/ar/lu/luLandUseInfo.jsp?type=search&searchText=${enc}`:'https://www.eum.go.kr/',
+    realtyprice:'https://www.realtyprice.kr:447/notice/town/searchTermsRealPrice.htm',
+    iros:'https://www.iros.go.kr/',
+    rtms:'https://rt.molit.go.kr/',
+    naver:addr?`https://map.naver.com/v5/search/${enc}`:'https://map.naver.com/',
+    kab:'https://www.applyhome.co.kr/',
+    hometax:'https://www.hometax.go.kr/',
+    wetax:'https://www.wetax.go.kr/'
+  };
+  window.open(urls[type]||'#','_blank');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async function init(){
+  renderDashboard();
+  await syncFromSheets();
+})();
+</script>
+</body>
+</html>
