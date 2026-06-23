@@ -1549,6 +1549,15 @@ function handleImport(event) {
 // ============================================================
 function handleSurveyImport(event) {
   const file = event.target.files[0]; if (!file) return;
+  if (typeof XLSX === 'undefined') {
+    showToast('라이브러리 로딩 중...', '');
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => handleSurveyImport({ target: { files: [file], value: '' } });
+    s.onerror = () => showToast('라이브러리 로드 실패 — 인터넷 연결 확인', 'error');
+    document.head.appendChild(s);
+    return;
+  }
   const reader = new FileReader();
   reader.onload = async e => {
     try {
