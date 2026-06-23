@@ -1545,7 +1545,7 @@ function handleImport(event) {
 }
 
 // ============================================================
-// SURVEY IMPORT (조사표 엑셀 → 매물)
+// SURVEY IMPORT (조사표_클릭형.xlsx → 매물)
 // ============================================================
 function handleSurveyImport(event) {
   const file = event.target.files[0]; if (!file) return;
@@ -1562,75 +1562,112 @@ function handleSurveyImport(event) {
   reader.onload = async e => {
     try {
       const wb = XLSX.read(e.target.result, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      const imported = parseSurveyRows(rows);
-      if (!imported.length) { showToast('가져올 데이터가 없습니다.', 'warning'); return; }
+      // 임대매매용 시트 찾기 (없으면 첫 번째 시트)
+      const wsName = wb.SheetNames.find(n => n.includes('임대') || n.includes('매매')) || wb.SheetNames[0];
+      const ws = wb.Sheets[wsName];
+      const p = parseSurveyCells(ws);
+      if (!p || !p.address) {
+        showToast('소재지 정보가 없습니다. 조사표를 확인해주세요.', 'warning'); return;
+      }
       const props = loadProperties();
-      let added = 0;
-      imported.forEach(p => {
-        const dup = props.find(x => x.address === p.address && x.unit === p.unit);
-        if (!dup) { props.push({ ...p, id: genId('P', props) }); added++; }
-      });
+      const dup = props.find(x => x.address === p.address && x.unit === p.unit);
+      if (dup) { showToast('이미 등록된 매물입니다: ' + p.address, 'warning'); return; }
+      const newProp = { ...p, id: genId('P', props) };
+      props.push(newProp);
       saveProperties(props);
       renderPropertyTable();
       updateCount();
-      showToast(`조사표 ${added}건 가져오기 완료!`, 'success');
+      showToast('조사표 가져오기 완료! (' + (p.address||'') + ')', 'success');
+      if (SheetAPI.isConfigured()) {
+        try { await SheetAPI.post('saveProperty', newProp); setSyncStatus('synced'); }
+        catch(err2) { setSyncStatus('error'); }
+      }
     } catch(err) { showToast('파일 읽기 오류: ' + err.message, 'error'); }
   };
   reader.readAsArrayBuffer(file);
   event.target.value = '';
 }
 
-function parseSurveyRows(rows) {
-  if (rows.length < 2) return [];
-  const header = rows[0].map(h => String(h).trim());
-  const COL = {
-    date:        ['등록일','날짜'],
-    address:     ['주소','상세주소','소재지'],
-    buildingName:['건물명','빌딩명'],
-    unit:        ['호수','호실'],
-    region:      ['구','지역','구동'],
-    buildingType:['유형','건물유형'],
-    dealType:    ['거래유형','거래'],
-    deposit:     ['보증금'],
-    rent:        ['월세'],
-    area:        ['면적','전용면적'],
-    floor:       ['층'],
-    option:      ['옵션'],
-    status:      ['상태'],
-    memo:        ['메모','비고']
+function parseSurveyCells(ws) {
+  // 셀 값 읽기 헬퍼
+  const cv = coord => {
+    const cell = ws[coord];
+    if (!cell || cell.v === undefined || cell.v === null) return '';
+    return String(cell.v).trim();
   };
-  const idx = {};
-  Object.entries(COL).forEach(([key, candidates]) => {
-    for (const c of candidates) {
-      const i = header.findIndex(h => h.includes(c));
-      if (i >= 0) { idx[key] = i; break; }
+  const isChecked = coord => cv(coord).includes('☑');
+
+  // 옵션 체크박스
+  const optMap = [['B20','에어컨'],['C20','냉장고'],['E20','인덕션'],
+                  ['F20','전자레인지'],['B21','세탁기'],['C21','붙박이장']];
+  const opts = optMap.filter(([k]) => isChecked(k)).map(([,v]) => v);
+  const extraOpt = cv('E21').replace(/기타옵션/g,'').replace(/,\s*$/, '').trim();
+  if (extraOpt) opts.push(...extraOpt.split(',').map(x=>x.trim()).filter(Boolean));
+  const option = opts.length >= 6 ? '풀옵션' : opts.length >= 2 ? '세미옵션' : opts.length ? '세미옵션' : '없음';
+
+  // 보안
+  const secMap = [['B23','CCTV'],['C23','인터폰'],['D23','도어락']];
+  const security = secMap.filter(([k]) => isChecked(k)).map(([,v]) => v).join(', ');
+
+  // 거래구분
+  const dealRaw = cv('B15');
+  const dealType = ['전세','월세','반전세','매매'].includes(dealRaw) ? dealRaw : '';
+
+  // 주소 + 호수 분리
+  const fullAddr = cv('B7');
+  const unitMatch = fullAddr.match(/(\d+호|옥탑\d*|지하\d*호?)$/);
+  const unit = unitMatch ? unitMatch[1] : '';
+  const address = unitMatch ? fullAddr.slice(0, fullAddr.lastIndexOf(unit)).trim() : fullAddr;
+
+  // 층 정보
+  const floorRaw = cv('B12');
+  const floorMatch = floorRaw.match(/(\S+층)[^\d]*(\S+층)/);
+  const floor = floorMatch ? floorMatch[1] + '/총' + floorMatch[2] : floorRaw;
+
+  // 날짜 변환 (엑셀 숫자 → 문자열)
+  const fmtDate = coord => {
+    const cell = ws[coord];
+    if (!cell) return '';
+    if (cell.t === 'd') return cell.v.toISOString().slice(0,10);
+    if (cell.t === 'n') {
+      const d = new Date(Math.round((cell.v - 25569) * 86400 * 1000));
+      return d.toISOString().slice(0,10);
     }
-  });
-  const today = new Date().toISOString().slice(0,10);
-  return rows.slice(1).map(row => {
-    const g = k => (idx[k] !== undefined ? String(row[idx[k]]).trim() : '');
-    if (!g('address') && !g('buildingName')) return null;
-    return {
-      date:         g('date') || today,
-      address:      g('address'),
-      buildingName: g('buildingName'),
-      unit:         g('unit'),
-      region:       g('region'),
-      buildingType: g('buildingType'),
-      dealType:     g('dealType'),
-      deposit:      g('deposit'),
-      rent:         g('rent'),
-      area:         g('area'),
-      floor:        g('floor'),
-      option:       g('option'),
-      status:       g('status') || '매물확보',
-      memo:         g('memo'),
-      updatedAt:    new Date().toISOString()
-    };
-  }).filter(Boolean);
+    return String(cell.v).slice(0,10);
+  };
+
+  // 주차/방향 유효값 검사
+  const parkingRaw = cv('B13');
+  const parking = ['가능','불가','문의'].includes(parkingRaw) ? parkingRaw : '';
+  const dirRaw = cv('B22');
+  const direction = ['남','동','서','북','남동','남서','북동','북서'].includes(dirRaw) ? dirRaw : '';
+
+  const memoLines = [];
+  if (security) memoLines.push('보안: ' + security);
+
+  return {
+    date:        fmtDate('B5') || new Date().toISOString().slice(0,10),
+    address,
+    unit,
+    buildingName: '',
+    region:      '',
+    dong:        '',
+    buildingType: '',
+    dealType,
+    deposit:     cv('B17'),
+    rent:        cv('D17'),
+    maintenance: cv('F17'),
+    floor,
+    direction,
+    parking,
+    option,
+    moveIn:      fmtDate('F13'),
+    status:      '매물확보',
+    memo:        memoLines.join('\n'),
+    updatedAt:   new Date().toISOString()
+  };
 }
+
 
 // ============================================================
 // SCHEDULE DATA
