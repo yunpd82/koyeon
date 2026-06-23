@@ -1633,7 +1633,10 @@ function parseSurveyCells(ws) {
       const d = new Date(Math.round((cell.v - 25569) * 86400 * 1000));
       return d.toISOString().slice(0,10);
     }
-    return String(cell.v).slice(0,10);
+    const s = String(cell.v);
+    const m = s.match(/(\d{4})[.\-\/\s]+(\d{1,2})[.\-\/\s]+(\d{1,2})/);
+    if (m) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+    return s.slice(0,10);
   };
 
   // 주차/방향 유효값 검사
