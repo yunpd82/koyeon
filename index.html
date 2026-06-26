@@ -26,8 +26,8 @@
   .sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
   .sidebar-logo h1{font-size:17px;font-weight:700;color:#fff}
   .sidebar-logo p{font-size:11px;color:#94a3b8;margin-top:2px}
-  .sidebar-nav{padding:8px 0;flex:1;overflow-y:auto}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;color:#8e8e93;border-left:3px solid transparent;transition:all .15s;font-size:13px;letter-spacing:-0.1px}
+  .sidebar-nav{padding:4px 0;flex:1}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:7px 14px;cursor:pointer;color:#8e8e93;border-left:3px solid transparent;transition:all .15s;font-size:12px;letter-spacing:-0.2px}
   .nav-item:hover{background:rgba(255,255,255,.06);color:#f2f2f7}
   .nav-item.active{background:rgba(0,102,204,.18);color:#2997ff;border-left-color:#0066cc}
   .sidebar-bottom{padding:12px 16px;border-top:1px solid rgba(255,255,255,.08)}
@@ -2653,61 +2653,6 @@ function runMatching() {
 (async function init() {
   setSyncStatus('offline');
   updateCount();
-  renderDashboard();
-  await syncFromSheets();
-})();
-</script>
-</body>
-</html>e,
-    memo:document.getElementById('req_memo').value,
-    status:document.getElementById('req_status').value,
-    createdAt:editId?(reqs.find(r=>r.id===editId)?.createdAt||new Date().toISOString()):new Date().toISOString()
-  };
-  if(editId){const idx=reqs.findIndex(r=>r.id===editId);if(idx!==-1)reqs[idx]=obj;else reqs.push(obj);}
-  else{reqs.push(obj);}
-  saveRequests(reqs);
-  closeModal('requestModal');
-  renderRequestTable();
-  showToast(editId?'의뢰가 수정되었습니다.':'의뢰가 등록되었습니다.','success');
-}
-
-function deleteRequest(id){
-  const r=loadRequests().find(x=>x.id===id);
-  document.getElementById('confirmTitle').textContent='의뢰를 삭제하시겠습니까?';
-  document.getElementById('confirmMsg').textContent=`${r?.name||id} — 이 작업은 되돌릴 수 없습니다.`;
-  document.getElementById('confirmBtn').onclick=()=>{
-    saveRequests(loadRequests().filter(x=>x.id!==id));
-    closeModal('confirmModal');
-    renderRequestTable();
-    showToast('의뢰가 삭제되었습니다.');
-  };
-  document.getElementById('confirmModal').classList.add('open');
-}
-
-// ============================================================
-// PUBLIC RECORDS
-// ============================================================
-function openRecord(type){
-  const addr=document.getElementById('recordAddrInput').value.trim();
-  const enc=encodeURIComponent(addr);
-  const urls={
-    eais:'https://cloud.eais.go.kr/moct/bci/aaa02/BCIAAA02L01',
-    eum:addr?`https://www.eum.go.kr/web/ar/lu/luLandUseInfo.jsp?type=search&searchText=${enc}`:'https://www.eum.go.kr/',
-    realtyprice:'https://www.realtyprice.kr:447/notice/town/searchTermsRealPrice.htm',
-    iros:'https://www.iros.go.kr/',
-    rtms:'https://rt.molit.go.kr/',
-    naver:addr?`https://map.naver.com/v5/search/${enc}`:'https://map.naver.com/',
-    kab:'https://www.applyhome.co.kr/',
-    hometax:'https://www.hometax.go.kr/',
-    wetax:'https://www.wetax.go.kr/'
-  };
-  window.open(urls[type]||'#','_blank');
-}
-
-// ============================================================
-// INIT
-// ============================================================
-(async function init(){
   renderDashboard();
   await syncFromSheets();
 })();
