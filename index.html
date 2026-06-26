@@ -788,12 +788,10 @@
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <label for="p_photoFile" style="cursor:pointer;background:#3a3a3c;color:#e2e8f0;border-radius:8px;padding:7px 14px;font-size:12px;white-space:nowrap;margin:0">📤 사진 업로드</label>
-              <input type="file" id="p_photoFile" accept="image/*" style="display:none" onchange="uploadPropertyPhoto(this)">
+              <input type="file" id="p_photoFile" accept="image/*" multiple style="display:none" onchange="uploadPropertyPhoto(this)">
               <span id="p_photoStatus" style="font-size:12px;color:#8e8e93"></span>
             </div>
-            <div id="p_photoPreview" style="margin-top:8px;display:none">
-              <img id="p_photoImg" src="" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:cover">
-            </div>
+            <div id="p_photoPreview" style="margin-top:8px;display:none"></div>
           </div>
           <div class="form-group full"><label>비고 / 메모</label><textarea id="p_memo" class="form-control" placeholder="특이사항, 옵션 세부내역, 협의 내용 등..."></textarea></div>
         </div>
@@ -1299,6 +1297,7 @@ function openPropertyModal(id=null) {
   document.getElementById('p_moveInNego').checked=false;
   document.getElementById('p_photoStatus').textContent='';
   document.getElementById('p_photoPreview').style.display='none';
+  document.getElementById('p_photoPreview').innerHTML='';
   if(document.getElementById('p_photoFile')) document.getElementById('p_photoFile').value='';
 
   if (id) {
@@ -1317,6 +1316,11 @@ function openPropertyModal(id=null) {
     document.getElementById('p_moveInImmediate').checked = mi==='즉시입주';
     document.getElementById('p_moveInNego').checked = mi==='협의가능';
     document.getElementById('p_moveIn').value = (mi==='즉시입주'||mi==='협의가능') ? '' : mi;
+    if(p.photoLink){
+      let urls=[]; try{urls=JSON.parse(p.photoLink);}catch(e){urls=p.photoLink?[p.photoLink]:[];}
+      if(!Array.isArray(urls)) urls=[urls];
+      if(urls.length) renderPhotoPreview(urls, document.getElementById('p_photoPreview'));
+    }
   }
   document.getElementById('propertyModal').classList.add('open');
 }
@@ -2541,22 +2545,10 @@ function renderCustomers() {
 
 // ── 사진 업로드 ──────────────────────────────────────────────
 async function uploadPropertyPhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
+  const files = Array.from(input.files);
+  if (!files.length) return;
   const status = document.getElementById('p_photoStatus');
   const preview = document.getElementById('p_photoPreview');
-  const img = document.getElementById('p_photoImg');
-
-  status.textContent = '⏳ 업로드 중...';
-  status.style.color = '#8e8e93';
-
-  // base64 변환
-  const base64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
   const cfg = JSON.parse(localStorage.getItem('koyeon_settings_v1') || '{}');
   if (!cfg.apiUrl) {
@@ -2565,29 +2557,74 @@ async function uploadPropertyPhoto(input) {
     return;
   }
 
-  try {
-    const res = await fetch(cfg.apiUrl, {
-      method: 'POST',
-      body: JSON.stringify({
-        secret: cfg.secret || 'koyeon2024',
-        action: 'uploadPhoto',
-        data: { imageData: base64, fileName: file.name, mimeType: file.type }
-      })
+  // 기존 URL 배열 가져오기
+  let existing = [];
+  try { existing = JSON.parse(document.getElementById('p_photoLink').value || '[]'); } catch(e) {}
+  if (!Array.isArray(existing)) existing = existing ? [existing] : [];
+
+  const urls = [...existing];
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    status.textContent = `⏳ 업로드 중... (${i+1}/${files.length})`;
+    status.style.color = '#8e8e93';
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
-    const data = await res.json();
-    if (data.ok) {
-      document.getElementById('p_photoLink').value = data.url;
-      status.textContent = '✅ 업로드 완료!';
-      status.style.color = '#30d158';
-      img.src = data.url;
-      preview.style.display = 'block';
-    } else {
-      throw new Error(data.error || '업로드 실패');
+    try {
+      const res = await fetch(cfg.apiUrl, {
+        method: 'POST',
+        body: JSON.stringify({
+          secret: cfg.secret || 'koyeon2024',
+          action: 'uploadPhoto',
+          data: { imageData: base64, fileName: file.name, mimeType: file.type }
+        })
+      });
+      const data = await res.json();
+      if (data.ok) urls.push(data.url);
+      else throw new Error(data.error);
+    } catch(err) {
+      status.textContent = `❌ ${file.name} 실패: ${err.message}`;
+      status.style.color = '#ff3b30';
+      return;
     }
-  } catch (err) {
-    status.textContent = '❌ ' + err.message;
-    status.style.color = '#ff3b30';
   }
+
+  document.getElementById('p_photoLink').value = JSON.stringify(urls);
+  status.textContent = `✅ ${urls.length}장 업로드 완료!`;
+  status.style.color = '#30d158';
+  renderPhotoPreview(urls, preview);
+}
+
+
+function openLightbox(url) {
+  document.getElementById('lightboxImg').src = url;
+  const lb = document.getElementById('photoLightbox');
+  lb.style.display = 'flex';
+}
+function closeLightbox() {
+  document.getElementById('photoLightbox').style.display = 'none';
+}
+
+function renderPhotoPreview(urls, container) {
+  container.style.display = 'block';
+  container.innerHTML = urls.map((url, i) => `
+    <div style="position:relative;display:inline-block;margin:4px">
+      <img src="${url}" style="width:100px;height:80px;object-fit:cover;border-radius:6px;cursor:zoom-in" onclick="openLightbox('${url}')">
+      <button onclick="removePhoto(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;padding:0;line-height:1">✕</button>
+    </div>`).join('');
+}
+
+function removePhoto(idx) {
+  let urls = [];
+  try { urls = JSON.parse(document.getElementById('p_photoLink').value || '[]'); } catch(e) {}
+  if (!Array.isArray(urls)) urls = urls ? [urls] : [];
+  urls.splice(idx, 1);
+  document.getElementById('p_photoLink').value = urls.length ? JSON.stringify(urls) : '';
+  renderPhotoPreview(urls, document.getElementById('p_photoPreview'));
+  if (!urls.length) document.getElementById('p_photoPreview').style.display = 'none';
 }
 
 // ============================================================
@@ -2659,9 +2696,18 @@ async function showShareView(propId, encodedCfg) {
         <div style="font-size:12px;color:#6e6e73;margin-top:2px">안암로 148 · 안암동 · 동대문구</div>
       </div>
 
-      ${prop.photoLink ? `<div style="border-radius:18px;overflow:hidden;margin-bottom:16px;background:#e5e5ea;height:220px;display:flex;align-items:center;justify-content:center">
-        <a href="${prop.photoLink}" target="_blank" style="color:#0066cc;font-size:14px;text-decoration:none">📸 사진 보기 →</a>
-      </div>` : ''}
+      ${(()=>{
+        if(!prop.photoLink) return '';
+        let urls=[]; try{urls=JSON.parse(prop.photoLink);}catch(e){urls=prop.photoLink?[prop.photoLink]:[];}
+        if(!Array.isArray(urls)) urls=[urls];
+        if(!urls.length) return '';
+        return `<div style="margin-bottom:16px">
+          <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
+            ${urls.map(u=>`<img src="${u}" style="height:200px;border-radius:12px;flex-shrink:0;object-fit:cover;max-width:90vw" onclick="window.open('${u}','_blank')">`).join('')}
+          </div>
+          <div style="font-size:11px;color:#aeaeb2;margin-top:4px;text-align:center">사진을 탭하면 크게 볼 수 있어요</div>
+        </div>`;
+      })()}
 
       <div style="background:#fff;border-radius:18px;padding:20px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -2852,5 +2898,11 @@ function runMatching() {
   await syncFromSheets();
 })();
 </script>
+
+<!-- 사진 라이트박스 -->
+<div id="photoLightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;cursor:zoom-out" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" style="max-width:95vw;max-height:92vh;border-radius:10px;object-fit:contain">
+  <div style="position:absolute;top:16px;right:20px;color:#fff;font-size:28px;cursor:pointer;line-height:1" onclick="closeLightbox()">✕</div>
+</div>
 </body>
 </html>
