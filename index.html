@@ -2517,8 +2517,8 @@ function renderCustomers() {
 // 매물 공유 링크
 // ============================================================
 function copyShareLink(propId) {
-  const cfg = JSON.parse(localStorage.getItem('koyeon_config') || '{}');
-  const encoded = btoa(JSON.stringify({u: cfg.scriptUrl||'', s: cfg.secret||'koyeon2024'}));
+  const cfg = JSON.parse(localStorage.getItem('koyeon_settings_v1') || '{}');
+  const encoded = btoa(JSON.stringify({u: cfg.apiUrl||'', s: cfg.secret||'koyeon2024'}));
   const url = location.origin + location.pathname + '#share/' + propId + '/' + encoded;
   navigator.clipboard.writeText(url).then(() => {
     showToast('🔗 공유 링크가 복사됐습니다! 카톡으로 손님에게 전송하세요.', 'success');
@@ -2543,17 +2543,17 @@ async function showShareView(propId, encodedCfg) {
 
   // 구글 시트 or 로컬에서 매물 가져오기
   let prop = null;
-  let cfg = JSON.parse(localStorage.getItem('koyeon_config') || '{}');
+  let cfg = JSON.parse(localStorage.getItem('koyeon_settings_v1') || '{}');
   if (encodedCfg) {
     try {
       const dec = JSON.parse(atob(encodedCfg));
-      if (!cfg.scriptUrl && dec.u) cfg.scriptUrl = dec.u;
+      if (!cfg.apiUrl && dec.u) cfg.apiUrl = dec.u;
       if (!cfg.secret && dec.s) cfg.secret = dec.s;
     } catch(e) {}
   }
-  if (cfg.scriptUrl) {
+  if (cfg.apiUrl) {
     try {
-      const url = cfg.scriptUrl + '?action=getAll&secret=' + encodeURIComponent(cfg.secret || 'koyeon2024');
+      const url = cfg.apiUrl + '?action=getAll&secret=' + encodeURIComponent(cfg.secret || 'koyeon2024');
       const r = await fetch(url);
       const data = await r.json();
       if (data.ok) prop = (data.properties || []).find(p => p.id === propId);
