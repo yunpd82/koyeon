@@ -794,6 +794,10 @@
             <div id="p_photoPreview" style="margin-top:8px;display:none"></div>
           </div>
           <div class="form-group full"><label>비고 / 메모</label><textarea id="p_memo" class="form-control" placeholder="특이사항, 옵션 세부내역, 협의 내용 등..."></textarea></div>
+          <div class="form-group full">
+            <label>🔒 비공개 메모 <span style="font-size:11px;color:#8e8e93;font-weight:400">(공유 링크에 표시 안 됨 · 이 기기에만 저장)</span></label>
+            <textarea id="p_privateMemo" class="form-control" rows="2" placeholder="임대인 특이사항, 내부 협의 내용 등 손님에게 보여주지 않을 메모..."></textarea>
+          </div>
         </div>
       </div>
     </div>
@@ -1295,6 +1299,7 @@ function openPropertyModal(id=null) {
   document.getElementById('p_status').value='매물확보';
   document.getElementById('p_moveInImmediate').checked=false;
   document.getElementById('p_moveInNego').checked=false;
+  document.getElementById('p_privateMemo').value='';
   document.getElementById('p_photoStatus').textContent='';
   document.getElementById('p_photoPreview').style.display='none';
   document.getElementById('p_photoPreview').innerHTML='';
@@ -1321,6 +1326,7 @@ function openPropertyModal(id=null) {
       if(!Array.isArray(urls)) urls=[urls];
       if(urls.length) renderPhotoPreview(urls, document.getElementById('p_photoPreview'));
     }
+    document.getElementById('p_privateMemo').value = loadPrivateMemo(p.id);
   }
   document.getElementById('propertyModal').classList.add('open');
 }
@@ -1370,6 +1376,8 @@ async function saveProperty() {
   if(editId){const idx=props.findIndex(p=>p.id===editId);if(idx!==-1)props[idx]=obj;else props.push(obj);}
   else{props.push(obj);}
   saveProperties(props);
+  // 비공개 메모 로컬 저장
+  savePrivateMemo(obj.id, document.getElementById('p_privateMemo').value.trim());
   closeModal('propertyModal');
   renderPropertyTable();
   updateCount();
@@ -1425,6 +1433,10 @@ function viewProperty(id) {
       <div class="detail-item"><label>광고채널</label><span>${p.adChannel||'-'}</span></div>
       <div class="detail-item full"><label>📸 사진 링크</label><span>${p.photoLink?`<a href="${p.photoLink}" target="_blank" style="color:var(--primary);text-decoration:underline">📂 사진 폴더 열기</a>`:'없음'}</span></div>
       <div class="detail-item full"><label>비고/메모</label><span style="white-space:pre-wrap">${p.memo||'-'}</span></div>
+      ${loadPrivateMemo(p.id) ? `<div class="detail-item full" style="background:#2c2c0a;border:1px solid #4a4a1a;border-radius:8px;padding:10px;margin-top:8px">
+        <label style="color:#ffd60a">🔒 비공개 메모</label>
+        <span style="white-space:pre-wrap;color:#ffe066">${loadPrivateMemo(p.id)}</span>
+      </div>` : ''}
     </div>`;
   document.getElementById('detailEditBtn').onclick=()=>{ closeModal('detailModal'); openPropertyModal(id); };
   document.getElementById('detailModal').classList.add('open');
@@ -2542,6 +2554,19 @@ function renderCustomers() {
 }
 
 
+
+
+// ── 비공개 메모 (로컬 전용) ──────────────────────────────────
+function loadPrivateMemo(propId) {
+  const memos = JSON.parse(localStorage.getItem('koyeon_private_memos') || '{}');
+  return memos[propId] || '';
+}
+function savePrivateMemo(propId, memo) {
+  const memos = JSON.parse(localStorage.getItem('koyeon_private_memos') || '{}');
+  if (memo) memos[propId] = memo;
+  else delete memos[propId];
+  localStorage.setItem('koyeon_private_memos', JSON.stringify(memos));
+}
 
 // ── 사진 업로드 ──────────────────────────────────────────────
 async function uploadPropertyPhoto(input) {
