@@ -419,7 +419,7 @@
           </div>
           <div style="overflow-x:auto">
             <table>
-              <thead><tr><th>매물번호</th><th>등록일</th><th>권역</th><th>상세주소</th><th>유형</th><th>거래</th><th>보증금</th><th>월세</th><th>면적</th><th>옵션</th><th>상태</th><th>관리</th></tr></thead>
+              <thead><tr><th>매물번호</th><th style="width:70px;white-space:nowrap">등록일</th><th>권역</th><th>상세주소</th><th>유형</th><th>거래</th><th>보증금</th><th>월세</th><th>면적</th><th>옵션</th><th>상태</th><th>관리</th></tr></thead>
               <tbody id="propertyTableBody"><tr><td colspan="11" class="no-data">등록된 매물이 없습니다.</td></tr></tbody>
             </table>
           </div>
@@ -1240,7 +1240,7 @@ function renderPropertyTable() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="font-size:12px;color:var(--text-sm)">${p.id}</td>
-      <td>${p.date||'-'}</td>
+      <td style="font-size:11px;white-space:nowrap">${p.date ? p.date.replace(/-/g,'. ') : '-'}</td>
       <td>${p.region||'-'}${p.dong?' '+p.dong:''}</td>
       <td title="${p.address}">${truncate(p.address,22)}</td>
       <td><span class="badge badge-${p.buildingType||''}">${p.buildingType||'-'}</span></td>
