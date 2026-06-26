@@ -1624,10 +1624,10 @@ async function syncFromSheets() {
   setSyncStatus('syncing');
   try {
     const r = await SheetAPI.getAll();
-    if (r.properties) saveProperties(r.properties);
-    if (r.landlords)  saveLandlords(r.landlords);
-    if (r.customers)  saveCustomers(r.customers);
-    if (r.requests)   saveRequests(r.requests);
+    if (r.properties && r.properties.length > 0) saveProperties(r.properties);
+    if (r.landlords  && r.landlords.length  > 0) saveLandlords(r.landlords);
+    if (r.customers  && r.customers.length  > 0) saveCustomers(r.customers);
+    if (r.requests   && r.requests.length   > 0) saveRequests(r.requests);
     setSyncStatus('synced');
     updateCount();
   } catch(e) {
