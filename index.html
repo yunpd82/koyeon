@@ -2517,7 +2517,9 @@ function renderCustomers() {
 // 매물 공유 링크
 // ============================================================
 function copyShareLink(propId) {
-  const url = location.origin + location.pathname + '#share/' + propId;
+  const cfg = JSON.parse(localStorage.getItem('koyeon_config') || '{}');
+  const encoded = btoa(JSON.stringify({u: cfg.scriptUrl||'', s: cfg.secret||'koyeon2024'}));
+  const url = location.origin + location.pathname + '#share/' + propId + '/' + encoded;
   navigator.clipboard.writeText(url).then(() => {
     showToast('🔗 공유 링크가 복사됐습니다! 카톡으로 손님에게 전송하세요.', 'success');
   }).catch(() => {
@@ -2528,18 +2530,27 @@ function copyShareLink(propId) {
 async function checkShareMode() {
   const hash = location.hash;
   if (!hash.startsWith('#share/')) return false;
-  const propId = decodeURIComponent(hash.slice(7));
-  await showShareView(propId);
+  const parts = hash.slice(7).split('/');
+  const propId = decodeURIComponent(parts[0]);
+  const encodedCfg = parts[1] || '';
+  await showShareView(propId, encodedCfg);
   return true;
 }
 
-async function showShareView(propId) {
+async function showShareView(propId, encodedCfg) {
   document.body.style.background = '#f5f5f7';
   document.body.style.fontFamily = "system-ui,-apple-system,'Malgun Gothic',sans-serif";
 
   // 구글 시트 or 로컬에서 매물 가져오기
   let prop = null;
-  const cfg = JSON.parse(localStorage.getItem('koyeon_config') || '{}');
+  let cfg = JSON.parse(localStorage.getItem('koyeon_config') || '{}');
+  if (encodedCfg) {
+    try {
+      const dec = JSON.parse(atob(encodedCfg));
+      if (!cfg.scriptUrl && dec.u) cfg.scriptUrl = dec.u;
+      if (!cfg.secret && dec.s) cfg.secret = dec.s;
+    } catch(e) {}
+  }
   if (cfg.scriptUrl) {
     try {
       const url = cfg.scriptUrl + '?action=getAll&secret=' + encodeURIComponent(cfg.secret || 'koyeon2024');
