@@ -781,10 +781,18 @@
           <div class="form-group"><label>광고 채널</label><input type="text" id="p_adChannel" class="form-control" placeholder="예: 직방, 네이버"></div>
         </div>
         <div class="form-grid" style="margin-top:12px">
-          <div class="form-group full"><label>📸 사진 링크 (구글 드라이브 폴더 링크)</label>
-            <div style="display:flex;gap:6px">
-              <input type="url" id="p_photoLink" class="form-control" placeholder="구글 드라이브 링크 붙여넣기...">
+          <div class="form-group full"><label>📸 사진</label>
+            <div style="display:flex;gap:6px;margin-bottom:6px">
+              <input type="url" id="p_photoLink" class="form-control" placeholder="링크 직접 입력 또는 아래에서 파일 업로드...">
               <button type="button" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap" onclick="window.open(document.getElementById('p_photoLink').value,'_blank')" title="링크 열기">열기</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="p_photoFile" style="cursor:pointer;background:#3a3a3c;color:#e2e8f0;border-radius:8px;padding:7px 14px;font-size:12px;white-space:nowrap;margin:0">📤 사진 업로드</label>
+              <input type="file" id="p_photoFile" accept="image/*" style="display:none" onchange="uploadPropertyPhoto(this)">
+              <span id="p_photoStatus" style="font-size:12px;color:#8e8e93"></span>
+            </div>
+            <div id="p_photoPreview" style="margin-top:8px;display:none">
+              <img id="p_photoImg" src="" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:cover">
             </div>
           </div>
           <div class="form-group full"><label>비고 / 메모</label><textarea id="p_memo" class="form-control" placeholder="특이사항, 옵션 세부내역, 협의 내용 등..."></textarea></div>
@@ -1275,6 +1283,9 @@ function openPropertyModal(id=null) {
   document.getElementById('p_status').value='매물확보';
   document.getElementById('p_moveInImmediate').checked=false;
   document.getElementById('p_moveInNego').checked=false;
+  document.getElementById('p_photoStatus').textContent='';
+  document.getElementById('p_photoPreview').style.display='none';
+  if(document.getElementById('p_photoFile')) document.getElementById('p_photoFile').value='';
 
   if (id) {
     const p=loadProperties().find(x=>x.id===id); if(!p) return;
@@ -2512,6 +2523,58 @@ function renderCustomers() {
   }).join('');
 }
 
+
+
+// ── 사진 업로드 ──────────────────────────────────────────────
+async function uploadPropertyPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('p_photoStatus');
+  const preview = document.getElementById('p_photoPreview');
+  const img = document.getElementById('p_photoImg');
+
+  status.textContent = '⏳ 업로드 중...';
+  status.style.color = '#8e8e93';
+
+  // base64 변환
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const cfg = JSON.parse(localStorage.getItem('koyeon_settings_v1') || '{}');
+  if (!cfg.apiUrl) {
+    status.textContent = '❌ 구글 시트 연동 필요';
+    status.style.color = '#ff3b30';
+    return;
+  }
+
+  try {
+    const res = await fetch(cfg.apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        secret: cfg.secret || 'koyeon2024',
+        action: 'uploadPhoto',
+        data: { imageData: base64, fileName: file.name, mimeType: file.type }
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('p_photoLink').value = data.url;
+      status.textContent = '✅ 업로드 완료!';
+      status.style.color = '#30d158';
+      img.src = data.url;
+      preview.style.display = 'block';
+    } else {
+      throw new Error(data.error || '업로드 실패');
+    }
+  } catch (err) {
+    status.textContent = '❌ ' + err.message;
+    status.style.color = '#ff3b30';
+  }
+}
 
 // ============================================================
 // 매물 공유 링크
