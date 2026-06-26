@@ -2236,7 +2236,7 @@ function saveRequest() {
   } else { reqs.push(obj); }
   saveRequests(reqs);
   if (SheetAPI.isConfigured()) {
-    SheetAPI.post({action:'saveRequest', data:obj}).catch(()=>{});
+    SheetAPI.post('saveRequest', obj).catch(()=>{});
   }
   closeModal('requestModal');
   renderRequestTable();
@@ -2249,7 +2249,7 @@ function deleteRequest(id) {
   document.getElementById('confirmMsg').textContent   = `${r?.name||id} — 이 작업은 되돌릴 수 없습니다.`;
   document.getElementById('confirmBtn').onclick = () => {
     saveRequests(loadRequests().filter(x => x.id !== id));
-    if (SheetAPI.isConfigured()) SheetAPI.post({action:'deleteRequest', data:{id}}).catch(()=>{});
+    if (SheetAPI.isConfigured()) SheetAPI.post('deleteRequest', {id}).catch(()=>{});
     closeModal('confirmModal');
     renderRequestTable();
     showToast('의뢰가 삭제되었습니다.');
@@ -2510,7 +2510,7 @@ function saveCustomer() {
   };
   if (idx>=0) list[idx] = customer; else list.push(customer);
   saveCustomers(list);
-  if (SheetAPI.isConfigured()) SheetAPI.post({action:'saveCustomer', data:customer}).catch(()=>{});
+  if (SheetAPI.isConfigured()) SheetAPI.post('saveCustomer', customer).catch(()=>{});
   closeCustomerModal();
   renderCustomers();
   showToast('저장됐습니다','success');
@@ -2519,7 +2519,7 @@ function saveCustomer() {
 function deleteCustomer(id) {
   if (!confirm('이 고객을 삭제하시겠습니까?')) return;
   saveCustomers(loadCustomers().filter(c=>c.id!==id));
-  if (SheetAPI.isConfigured()) SheetAPI.post({action:'deleteCustomer', data:{id}}).catch(()=>{});
+  if (SheetAPI.isConfigured()) SheetAPI.post('deleteCustomer', {id}).catch(()=>{});
   renderCustomers();
   showToast('삭제됐습니다');
 }
