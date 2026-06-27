@@ -2367,13 +2367,20 @@ async function renderMapPins() {
   if (listEl) {
     listEl.innerHTML = props.map(p => {
       const c = PIN_COLORS[p.status] || '#6b7280';
-      return `<div style="padding:8px;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer;font-size:12px" onclick="viewProperty('${p.id}')">
-        <div style="display:flex;gap:6px;align-items:center">
+      const dealStr = p.dealType==='월세'
+        ? '월세 '+fmtMoney(p.deposit)+'/'+fmtMoney(p.rent)
+        : p.dealType==='전세'
+          ? '전세 '+fmtMoney(p.deposit)
+          : (p.dealType||'') + (p.deposit?' '+fmtMoney(p.deposit):'');
+      const areaStr = p.area ? ' · '+p.area+'㎡' : '';
+      return `<div style="padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;cursor:pointer;font-size:12px;transition:background .15s" onmouseenter="this.style.background='var(--hover)'" onmouseleave="this.style.background=''" onclick="viewProperty('${p.id}')">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
           <span style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0;display:inline-block"></span>
-          <b>${p.id}</b>
-          <span class="badge badge-${p.status}" style="font-size:10px">${p.status}</span>
+          <span style="font-weight:600;color:var(--text)">${p.id}</span>
+          <span class="badge badge-${p.status}" style="font-size:10px;margin-left:auto">${p.status}</span>
         </div>
-        <div style="margin-top:3px;color:var(--text-sm)">${truncate(p.address,28)}</div>
+        <div style="color:var(--text-sm);margin-bottom:3px;line-height:1.4">${truncate(p.address,26)}</div>
+        <div style="font-weight:600;color:var(--primary);font-size:12px">${dealStr}${areaStr}</div>
       </div>`;
     }).join('');
   }
