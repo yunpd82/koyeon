@@ -635,9 +635,31 @@
         <div id="kakaoMapContainer" style="flex:1;height:calc(100vh - 61px)"></div>
         <!-- 우측 매물 목록 패널 -->
         <div id="mapSidePanel" style="width:270px;height:calc(100vh - 61px);overflow-y:auto;background:var(--card);border-left:1px solid var(--border);flex-shrink:0;display:none">
-          <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:10">
-            <span style="font-weight:600;font-size:13px">📋 매물 목록</span>
-            <span id="mapSideCount" style="font-size:11px;color:var(--text-sm)"></span>
+          <div style="position:sticky;top:0;background:var(--card);z-index:10;border-bottom:1px solid var(--border)">
+            <div style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-weight:600;font-size:13px">📋 매물 목록</span>
+              <span id="mapSideCount" style="font-size:11px;color:var(--text-sm)"></span>
+            </div>
+            <div style="padding:0 10px 10px">
+              <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin-bottom:8px">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input id="mapSearchInput" type="text" placeholder="주소, 건물명 검색..." oninput="filterMapSideList()" style="border:none;background:transparent;outline:none;font-size:12px;width:100%;color:var(--text)">
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px" id="mapChipStatus">
+                <span class="chip chip-active" data-val="" onclick="mapChipClick(this,'mapChipStatus')" style="font-size:11px;padding:2px 8px">전체</span>
+                <span class="chip" data-val="매물확보" onclick="mapChipClick(this,'mapChipStatus')" style="font-size:11px;padding:2px 8px">매물확보</span>
+                <span class="chip" data-val="광고중" onclick="mapChipClick(this,'mapChipStatus')" style="font-size:11px;padding:2px 8px">광고중</span>
+                <span class="chip" data-val="예약" onclick="mapChipClick(this,'mapChipStatus')" style="font-size:11px;padding:2px 8px">예약</span>
+                <span class="chip" data-val="계약완료" onclick="mapChipClick(this,'mapChipStatus')" style="font-size:11px;padding:2px 8px">계약완료</span>
+                <span class="chip" data-val="보류" onclick="mapChipClick(this,'mapChipStatus')" style="font-size:11px;padding:2px 8px">보류</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px" id="mapChipDeal">
+                <span class="chip chip-active" data-val="" onclick="mapChipClick(this,'mapChipDeal')" style="font-size:11px;padding:2px 8px">전체</span>
+                <span class="chip" data-val="월세" onclick="mapChipClick(this,'mapChipDeal')" style="font-size:11px;padding:2px 8px">월세</span>
+                <span class="chip" data-val="전세" onclick="mapChipClick(this,'mapChipDeal')" style="font-size:11px;padding:2px 8px">전세</span>
+                <span class="chip" data-val="반전세" onclick="mapChipClick(this,'mapChipDeal')" style="font-size:11px;padding:2px 8px">반전세</span>
+              </div>
+            </div>
           </div>
           <div id="mapSideList" style="padding:8px"></div>
         </div>
@@ -742,7 +764,8 @@
             <select id="p_type" class="form-control"><option value="">선택</option><option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>단독</option><option>기타</option></select>
           </div>
           <div class="form-group"><label>전용면적(㎡)</label><input type="number" id="p_area" class="form-control" placeholder="예: 23.5" step="0.1"></div>
-          <div class="form-group"><label>층/총층</label><input type="text" id="p_floor" class="form-control" placeholder="예: 3/5"></div>
+          <div class="form-group"><label>현재층수</label><input type="number" id="p_floorCur" class="form-control" placeholder="예: 3" min="0" style="width:100%"></div>
+          <div class="form-group"><label>총층수</label><input type="number" id="p_floorTotal" class="form-control" placeholder="예: 5" min="0" style="width:100%"></div>
           <div class="form-group"><label>방향</label>
             <select id="p_direction" class="form-control"><option value="">선택</option>
               <option>남</option><option>동</option><option>서</option><option>북</option>
@@ -1308,7 +1331,7 @@ function openPropertyModal(id=null) {
   document.getElementById('propertyModalTitle').textContent='매물 등록';
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('p_date').value=today;
-  ['p_region','p_dong','p_address','p_buildingName','p_unit','p_type','p_area','p_floor','p_direction',
+  ['p_region','p_dong','p_address','p_buildingName','p_unit','p_type','p_area','p_floorCur','p_floorTotal','p_direction',
    'p_parking','p_option','p_dealType','p_deposit','p_rent','p_maintenance','p_moveIn',
    'p_landlordId','p_commission','p_moveIn','p_registryDate','p_photo','p_adChannel','p_photoLink','p_memo'].forEach(i=>{
     const el=document.getElementById(i); if(el) el.value='';
@@ -1327,7 +1350,7 @@ function openPropertyModal(id=null) {
     document.getElementById('editPropertyId').value=p.id;
     document.getElementById('propertyModalTitle').textContent='매물 수정';
     const fields={p_date:'date',p_region:'region',p_dong:'dong',p_address:'address',p_buildingName:'buildingName',
-      p_unit:'unit',p_type:'buildingType',p_area:'area',p_floor:'floor',p_direction:'direction',
+      p_unit:'unit',p_type:'buildingType',p_area:'area',p_floorCur:'floorCur',p_floorTotal:'floorTotal',p_direction:'direction',
       p_parking:'parking',p_option:'option',p_dealType:'dealType',p_deposit:'deposit',p_rent:'rent',
       p_maintenance:'maintenance',p_landlordId:'landlordId',p_commission:'commission',
       p_status:'status',p_registryDate:'registryDate',p_photo:'photo',p_adChannel:'adChannel',p_photoLink:'photoLink',p_memo:'memo'};
@@ -1369,7 +1392,8 @@ async function saveProperty() {
     unit:document.getElementById('p_unit').value,
     buildingType:document.getElementById('p_type').value,
     area:document.getElementById('p_area').value,
-    floor:document.getElementById('p_floor').value,
+    floorCur:document.getElementById('p_floorCur').value,
+    floorTotal:document.getElementById('p_floorTotal').value,
     direction:document.getElementById('p_direction').value,
     parking:document.getElementById('p_parking').value,
     option:document.getElementById('p_option').value,
@@ -1434,7 +1458,7 @@ function viewProperty(id) {
       <hr class="detail-divider">
       <div class="detail-item"><label>건물유형</label><span>${p.buildingType||'-'}</span></div>
       <div class="detail-item"><label>전용면적</label><span>${p.area?p.area+'㎡':'-'}</span></div>
-      <div class="detail-item"><label>층/총층</label><span>${p.floor||'-'}</span></div>
+      <div class="detail-item"><label>층/총층</label><span>${p.floorCur||p.floor ? (p.floorCur?(p.floorCur+'층'+(p.floorTotal?'/총'+p.floorTotal+'층':'')):(p.floor||'-')) : '-'}</span></div>
       <div class="detail-item"><label>방향</label><span>${p.direction||'-'}</span></div>
       <div class="detail-item"><label>주차</label><span>${p.parking||'-'}</span></div>
       <div class="detail-item"><label>옵션</label><span>${p.option||'-'}</span></div>
@@ -1820,8 +1844,9 @@ function parseSurveyCells(ws) {
 
   // 층 정보
   const floorRaw = cv('B12');
-  const floorMatch = floorRaw.match(/(\S+층)[^\d]*(\S+층)/);
-  const floor = floorMatch ? floorMatch[1] + '/총' + floorMatch[2] : floorRaw;
+  const floorMatch = floorRaw.match(/(\d+)[^\d]*(\d+)/);
+  const floorCur   = floorMatch ? floorMatch[1] : (floorRaw.match(/(\d+)/)?.[1]||'');
+  const floorTotal = floorMatch ? floorMatch[2] : '';
 
   // 날짜 변환 (엑셀 숫자 → 문자열)
   const fmtDate = coord => {
@@ -1859,7 +1884,8 @@ function parseSurveyCells(ws) {
     deposit:     cv('B17'),
     rent:        cv('D17'),
     maintenance: cv('F17'),
-    floor,
+    floorCur,
+    floorTotal,
     direction,
     parking,
     option,
@@ -2346,6 +2372,53 @@ function _initKakaoMap() {
 
 const PIN_COLORS = { '매물확보':'#1a56db','광고중':'#0e9f6e','예약':'#c27803','계약완료':'#6b7280','보류':'#e02424' };
 
+
+function mapChipClick(el, groupId) {
+  const group = document.getElementById(groupId);
+  // 단일 선택 (전체 토글)
+  if (el.dataset.val === '') {
+    group.querySelectorAll('.chip').forEach(c => c.classList.remove('chip-active'));
+    el.classList.add('chip-active');
+  } else {
+    const allBtn = group.querySelector('[data-val=""]');
+    allBtn?.classList.remove('chip-active');
+    el.classList.toggle('chip-active');
+    const anyActive = [...group.querySelectorAll('.chip')].some(c => c.dataset.val && c.classList.contains('chip-active'));
+    if (!anyActive) allBtn?.classList.add('chip-active');
+  }
+  filterMapSideList();
+}
+
+function filterMapSideList() {
+  const q = (document.getElementById('mapSearchInput')?.value || '').toLowerCase();
+  const statusGroup = document.getElementById('mapChipStatus');
+  const dealGroup   = document.getElementById('mapChipDeal');
+  const allStatusBtn = statusGroup?.querySelector('[data-val=""]');
+  const allDealBtn   = dealGroup?.querySelector('[data-val=""]');
+  const statuses = allStatusBtn?.classList.contains('chip-active') ? [] :
+    [...(statusGroup?.querySelectorAll('.chip.chip-active')||[])].map(c=>c.dataset.val).filter(Boolean);
+  const deals = allDealBtn?.classList.contains('chip-active') ? [] :
+    [...(dealGroup?.querySelectorAll('.chip.chip-active')||[])].map(c=>c.dataset.val).filter(Boolean);
+
+  const cards = document.querySelectorAll('#mapSideList [data-prop-id]');
+  let shown = 0;
+  cards.forEach(card => {
+    const id      = card.dataset.propId;
+    const addr    = (card.dataset.addr||'').toLowerCase();
+    const name    = (card.dataset.name||'').toLowerCase();
+    const status  = card.dataset.status||'';
+    const deal    = card.dataset.deal||'';
+    const qOk     = !q || addr.includes(q) || name.includes(q) || id.toLowerCase().includes(q);
+    const stOk    = !statuses.length || statuses.includes(status);
+    const dlOk    = !deals.length    || deals.includes(deal);
+    const vis     = qOk && stOk && dlOk;
+    card.style.display = vis ? '' : 'none';
+    if (vis) shown++;
+  });
+  const countEl = document.getElementById('mapSideCount');
+  if (countEl) countEl.textContent = shown+'건';
+}
+
 async function renderMapPins() {
   if (!_kakaoMapObj || !window.kakao) return;
 
@@ -2373,7 +2446,7 @@ async function renderMapPins() {
           ? '전세 '+fmtMoney(p.deposit)
           : (p.dealType||'') + (p.deposit?' '+fmtMoney(p.deposit):'');
       const areaStr = p.area ? ' · '+p.area+'㎡' : '';
-      return `<div style="padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;cursor:pointer;font-size:12px;transition:background .15s" onmouseenter="this.style.background='var(--hover)'" onmouseleave="this.style.background=''" onclick="viewProperty('${p.id}')">
+      return `<div data-prop-id="${p.id}" data-addr="${p.address||''}" data-name="${p.buildingName||''}" data-status="${p.status||''}" data-deal="${p.dealType||''}" style="padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;cursor:pointer;font-size:12px;transition:background .15s" onmouseenter="this.style.background='var(--hover)'" onmouseleave="this.style.background=''" onclick="viewProperty('${p.id}')">
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
           <span style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0;display:inline-block"></span>
           <span style="font-weight:600;color:var(--text)">${p.id}</span>
@@ -2799,6 +2872,16 @@ async function showShareView(propId, encodedCfg) {
 
   const dealLabel = { '월세':'월세', '전세':'전세', '매매':'매매', '반전세':'반전세' };
   const formatMoney = v => v ? parseInt(v).toLocaleString() + '만' : '';
+  // 구글 시트가 날짜로 변환한 값 걸러내기 (예: "3/5" → "Mar 05 2026...")
+  const safeText = v => {
+    if (!v) return '';
+    const s = String(v);
+    // ISO 날짜, GMT 포함, Date 형식 문자열이면 무효 처리
+    if (s.includes('GMT') || s.includes('T00:00:00') || /^\d{4}-\d{2}-\d{2}$/.test(s)) return '';
+    // Date 객체가 toString된 형태 (Mon Jan 01 2026...)
+    if (/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s/.test(s)) return '';
+    return s;
+  };
 
   let priceHtml = '';
   if (prop) {
@@ -2846,11 +2929,11 @@ async function showShareView(propId, encodedCfg) {
         <div style="font-size:13px;font-weight:600;color:#1d1d1f;margin-bottom:12px">매물 정보</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           ${prop.area ? `<div><div style="font-size:11px;color:#6e6e73">전용면적</div><div style="font-weight:600;font-size:14px">${prop.area}㎡</div></div>` : ''}
-          ${prop.floor ? `<div><div style="font-size:11px;color:#6e6e73">층수</div><div style="font-weight:600;font-size:14px">${prop.floor}</div></div>` : ''}
+          ${(prop.floorCur||safeText(prop.floor)) ? `<div><div style="font-size:11px;color:#6e6e73">층수</div><div style="font-weight:600;font-size:14px">${prop.floorCur?(prop.floorCur+'층'+(prop.floorTotal?'/총'+prop.floorTotal+'층':'')):safeText(prop.floor)}</div></div>` : ''}
           ${prop.direction ? `<div><div style="font-size:11px;color:#6e6e73">방향</div><div style="font-weight:600;font-size:14px">${prop.direction}</div></div>` : ''}
           ${prop.parking ? `<div><div style="font-size:11px;color:#6e6e73">주차</div><div style="font-weight:600;font-size:14px">${prop.parking}</div></div>` : ''}
           ${prop.option ? `<div><div style="font-size:11px;color:#6e6e73">옵션</div><div style="font-weight:600;font-size:14px">${prop.option}</div></div>` : ''}
-          ${prop.moveIn ? `<div><div style="font-size:11px;color:#6e6e73">입주가능일</div><div style="font-weight:600;font-size:14px">${prop.moveIn}</div></div>` : ''}
+          ${safeText(prop.moveIn) ? `<div><div style="font-size:11px;color:#6e6e73">입주가능일</div><div style="font-weight:600;font-size:14px">${safeText(prop.moveIn)}</div></div>` : ''}
         </div>
       </div>
 
