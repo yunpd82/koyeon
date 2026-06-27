@@ -1448,7 +1448,7 @@ function viewProperty(id) {
       <div class="detail-item"><label>등기부확인일</label><span>${p.registryDate||'-'}</span></div>
       <div class="detail-item"><label>사진촬영</label><span>${p.photo==='Y'?'✅ 완료':'⬜ 미완료'}</span></div>
       <div class="detail-item"><label>광고채널</label><span>${p.adChannel||'-'}</span></div>
-      <div class="detail-item full"><label>📸 사진 링크</label><span>${(()=>{if(!p.photoLink)return '-';let urls=[];try{urls=JSON.parse(p.photoLink);}catch(e){urls=[p.photoLink];}if(!Array.isArray(urls))urls=[urls];return urls.map((u,i)=>`<a href="${u}" target="_blank" style="color:var(--primary);text-decoration:none">📸 사진${urls.length>1?' '+(i+1):''}</a>`).join(' ');})()</div>
+      <div class="detail-item full"><label>📸 사진 링크</label><span>${(()=>{if(!p.photoLink)return '-';let urls=[];try{urls=JSON.parse(p.photoLink);}catch(e){urls=[p.photoLink];}if(!Array.isArray(urls))urls=[urls];return urls.map((u,i)=>'<a href="'+u+'" target="_blank" style="color:var(--primary);text-decoration:none">📸 사진'+(urls.length>1?' '+(i+1):'')+' </a>').join('');})()}</span></div>
       <div class="detail-item full"><label>비고/메모</label><span style="white-space:pre-wrap">${p.memo||'-'}</span></div>
       ${loadPrivateMemo(p.id) ? `<div class="detail-item full" style="background:#2c2c0a;border:1px solid #4a4a1a;border-radius:8px;padding:10px;margin-top:8px">
         <label style="color:#ffd60a">🔒 비공개 메모</label>
