@@ -80,7 +80,11 @@
   .table-toolbar{padding:14px 16px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);flex-wrap:wrap}
   .search-box{display:flex;align-items:center;gap:6px;background:var(--neutral-light);border:var(--hairline);border-radius:9999px;padding:6px 14px;flex:1;min-width:200px}
   .search-box input{border:none;background:transparent;outline:none;font-size:13px;width:100%}
-  select.filter{padding:6px 12px;border:var(--hairline);border-radius:9999px;font-size:13px;background:var(--card);color:var(--text);outline:none;cursor:pointer}
+  select.filter-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.chip{padding:4px 10px;border-radius:9999px;font-size:11px;cursor:pointer;background:var(--surface2);color:var(--text-sm);border:1px solid transparent;user-select:none;white-space:nowrap;transition:all .15s}
+.chip:hover{border-color:var(--accent)}
+.chip-active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.filter{padding:6px 12px;border:var(--hairline);border-radius:9999px;font-size:13px;background:var(--card);color:var(--text);outline:none;cursor:pointer}
   table{width:100%;border-collapse:collapse}
   thead th{background:#fafafc;padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text-sm);white-space:nowrap;letter-spacing:.2px}
   tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
@@ -390,18 +394,31 @@
               <input type="text" id="searchInput" placeholder="주소, 건물명으로 검색..." oninput="renderPropertyTable()">
             </div>
             <input type="text" class="filter" id="filterRegion" placeholder="구/동 검색..." oninput="renderPropertyTable()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none;width:130px">
-            <select class="filter" id="filterStatus" onchange="renderPropertyTable()">
-              <option value="">전체 상태</option>
-              <option>매물확보</option><option>광고중</option><option>예약</option><option>계약완료</option><option>보류</option>
-            </select>
-            <select class="filter" id="filterType" onchange="renderPropertyTable()">
-              <option value="">전체 유형</option>
-              <option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>단독</option><option>기타</option>
-            </select>
-            <select class="filter" id="filterDeal" onchange="renderPropertyTable()">
-              <option value="">전체 거래</option>
-              <option>매매</option><option>전세</option><option>월세</option><option>반전세</option>
-            </select>
+            <div class="filter-chips" id="filterStatus">
+              <span class="chip chip-active" data-val="">전체</span>
+              <span class="chip" data-val="매물확보">매물확보</span>
+              <span class="chip" data-val="광고중">광고중</span>
+              <span class="chip" data-val="예약">예약</span>
+              <span class="chip" data-val="계약완료">계약완료</span>
+              <span class="chip" data-val="보류">보류</span>
+            </div>
+            <div class="filter-chips" id="filterType">
+              <span class="chip chip-active" data-val="">전체</span>
+              <span class="chip" data-val="오피스텔">오피스텔</span>
+              <span class="chip" data-val="원룸">원룸</span>
+              <span class="chip" data-val="투룸">투룸</span>
+              <span class="chip" data-val="쓰리룸">쓰리룸</span>
+              <span class="chip" data-val="빌라">빌라</span>
+              <span class="chip" data-val="다가구">다가구</span>
+              <span class="chip" data-val="기타">기타</span>
+            </div>
+            <div class="filter-chips" id="filterDeal">
+              <span class="chip chip-active" data-val="">전체</span>
+              <span class="chip" data-val="매매">매매</span>
+              <span class="chip" data-val="전세">전세</span>
+              <span class="chip" data-val="월세">월세</span>
+              <span class="chip" data-val="반전세">반전세</span>
+            </div>
             <select class="filter" id="filterDepositMax" onchange="renderPropertyTable()" title="보증금 이하">
               <option value="">보증금 전체</option>
               <option value="500">500만 이하</option>
@@ -1226,18 +1243,18 @@ function renderDashboard() {
 function renderPropertyTable() {
   const q      = (document.getElementById('searchInput').value||'').toLowerCase();
   const region = document.getElementById('filterRegion').value;
-  const status = document.getElementById('filterStatus').value;
-  const type   = document.getElementById('filterType').value;
-  const deal   = document.getElementById('filterDeal').value;
+  const statuses = getChipValues('filterStatus');
+  const types    = getChipValues('filterType');
+  const deals    = getChipValues('filterDeal');
 
   const depositMax = parseInt(document.getElementById('filterDepositMax')?.value||'0',10)||0;
   const areaMax    = parseFloat(document.getElementById('filterAreaMax')?.value||'0')||0;
 
   let filtered = loadProperties().filter(p => {
     if (region && !`${p.region||''} ${p.dong||''} ${p.address||''}`.toLowerCase().includes(region.toLowerCase())) return false;
-    if (status && p.status!==status) return false;
-    if (type   && p.buildingType!==type) return false;
-    if (deal   && p.dealType!==deal) return false;
+    if (statuses.length && !statuses.includes(p.status)) return false;
+    if (types.length    && !types.includes(p.buildingType)) return false;
+    if (deals.length    && !deals.includes(p.dealType)) return false;
     if (depositMax && parseInt(p.deposit||0,10) > depositMax) return false;
     if (areaMax    && parseFloat(p.area||0) > areaMax) return false;
     if (q && !`${p.address} ${p.buildingName} ${p.memo} ${p.region} ${p.dong||''}`.toLowerCase().includes(q)) return false;
@@ -2564,6 +2581,41 @@ function renderCustomers() {
 
 
 
+
+// ── 필터 칩 ──────────────────────────────────────────────────
+function initFilterChips() {
+  ['filterStatus','filterType','filterDeal'].forEach(groupId => {
+    const group = document.getElementById(groupId);
+    if (!group) return;
+    group.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const val = chip.dataset.val;
+        if (val === '') {
+          // 전체 선택 → 나머지 해제
+          group.querySelectorAll('.chip').forEach(c => c.classList.remove('chip-active'));
+          chip.classList.add('chip-active');
+        } else {
+          // 전체 칩 해제
+          group.querySelector('[data-val=""]').classList.remove('chip-active');
+          chip.classList.toggle('chip-active');
+          // 아무것도 선택 안 됐으면 전체로
+          const anyActive = [...group.querySelectorAll('.chip')].some(c => c.dataset.val && c.classList.contains('chip-active'));
+          if (!anyActive) group.querySelector('[data-val=""]').classList.add('chip-active');
+        }
+        renderPropertyTable();
+      });
+    });
+  });
+}
+
+function getChipValues(groupId) {
+  const group = document.getElementById(groupId);
+  if (!group) return [];
+  const allBtn = group.querySelector('[data-val=""]');
+  if (allBtn?.classList.contains('chip-active')) return []; // 전체 = 필터 없음
+  return [...group.querySelectorAll('.chip.chip-active')].map(c => c.dataset.val).filter(Boolean);
+}
+
 // ── 비공개 메모 (로컬 전용) ──────────────────────────────────
 function loadPrivateMemo(propId) {
   const memos = JSON.parse(localStorage.getItem('koyeon_private_memos') || '{}');
@@ -2928,6 +2980,7 @@ function runMatching() {
   setSyncStatus('offline');
   updateCount();
   renderDashboard();
+  initFilterChips();
   await syncFromSheets();
 })();
 </script>
