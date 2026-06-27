@@ -1286,7 +1286,7 @@ function renderPropertyTable() {
       <td class="action-btns">
         <button class="icon-btn" onclick="viewProperty('${p.id}')" title="상세">👁</button>
         <button class="icon-btn" onclick="copyShareLink('${p.id}')" title="공유 링크 복사">🔗</button>
-        ${p.photoLink?`<button class="icon-btn" onclick="window.open('${p.photoLink}','_blank')" title="사진 보기">📸</button>`:''}
+        ${p.photoLink?`<button class="icon-btn" onclick="viewPhotos('${p.id}')" title="사진 보기">📸</button>`:''}
         <button class="icon-btn" onclick="openPropertyModal('${p.id}')" title="수정">✏️</button>
         <button class="icon-btn" onclick="deleteProperty('${p.id}')" title="삭제">🗑</button>
       </td>`;
@@ -1448,7 +1448,7 @@ function viewProperty(id) {
       <div class="detail-item"><label>등기부확인일</label><span>${p.registryDate||'-'}</span></div>
       <div class="detail-item"><label>사진촬영</label><span>${p.photo==='Y'?'✅ 완료':'⬜ 미완료'}</span></div>
       <div class="detail-item"><label>광고채널</label><span>${p.adChannel||'-'}</span></div>
-      <div class="detail-item full"><label>📸 사진 링크</label><span>${p.photoLink?`<a href="${p.photoLink}" target="_blank" style="color:var(--primary);text-decoration:underline">📂 사진 폴더 열기</a>`:'없음'}</span></div>
+      <div class="detail-item full"><label>📸 사진 링크</label><span>${(()=>{if(!p.photoLink)return '-';let urls=[];try{urls=JSON.parse(p.photoLink);}catch(e){urls=[p.photoLink];}if(!Array.isArray(urls))urls=[urls];return urls.map((u,i)=>`<a href="${u}" target="_blank" style="color:var(--primary);text-decoration:none">📸 사진${urls.length>1?' '+(i+1):''}</a>`).join(' ');})()</div>
       <div class="detail-item full"><label>비고/메모</label><span style="white-space:pre-wrap">${p.memo||'-'}</span></div>
       ${loadPrivateMemo(p.id) ? `<div class="detail-item full" style="background:#2c2c0a;border:1px solid #4a4a1a;border-radius:8px;padding:10px;margin-top:8px">
         <label style="color:#ffd60a">🔒 비공개 메모</label>
@@ -2683,6 +2683,36 @@ async function uploadPropertyPhoto(input) {
   renderPhotoPreview(urls, preview);
 }
 
+
+
+function viewPhotos(propId) {
+  const p = loadProperties().find(x => x.id === propId);
+  if (!p || !p.photoLink) return;
+  let urls = [];
+  try { urls = JSON.parse(p.photoLink); } catch(e) { urls = [p.photoLink]; }
+  if (!Array.isArray(urls)) urls = [urls];
+  urls = urls.filter(Boolean);
+  if (!urls.length) return;
+  if (urls.length === 1) { window.open(urls[0], '_blank'); return; }
+  // 여러 장 → 라이트박스 갤러리
+  const lb = document.getElementById('photoLightbox');
+  const img = document.getElementById('lightboxImg');
+  let cur = 0;
+  const show = i => { cur = (i + urls.length) % urls.length; img.src = urls[cur]; };
+  show(0);
+  lb.style.display = 'flex';
+  lb.onclick = null;
+  // 네비게이션 버튼 추가
+  lb.innerHTML = `
+    <button onclick="event.stopPropagation();lightboxPrev()" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">‹</button>
+    <img id="lightboxImg" src="${urls[0]}" style="max-width:90vw;max-height:85vh;border-radius:10px;object-fit:contain">
+    <button onclick="event.stopPropagation();lightboxNext()" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">›</button>
+    <div style="position:absolute;top:16px;right:20px;color:#fff;font-size:28px;cursor:pointer;line-height:1" onclick="closeLightbox()">✕</div>
+    <div style="position:absolute;bottom:16px;color:#fff;font-size:13px">${urls.length}장</div>`;
+  window.lightboxPrev = () => { cur = (cur - 1 + urls.length) % urls.length; document.getElementById('lightboxImg').src = urls[cur]; };
+  window.lightboxNext = () => { cur = (cur + 1) % urls.length; document.getElementById('lightboxImg').src = urls[cur]; };
+  lb.onclick = e => { if (e.target === lb) closeLightbox(); };
+}
 
 function openLightbox(url) {
   document.getElementById('lightboxImg').src = url;
