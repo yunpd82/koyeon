@@ -204,39 +204,59 @@
 
   @media(max-width:768px){
     .hamburger{display:flex}
-    .sidebar{position:fixed;left:0;top:0;height:100%;z-index:200;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+    /* 앱 컨테이너 - 모바일에서 스크롤 허용 */
+    .app{display:block;height:auto;overflow:visible}
+    .main{width:100%;height:auto;overflow:visible;padding-bottom:72px}
+    body{overflow-y:auto}
+    /* 사이드바 오버레이 */
+    .sidebar{position:fixed;left:0;top:0;height:100%;z-index:200;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto}
     .sidebar.open{transform:translateX(0)}
-    .app{display:block}
-    .main{width:100%;padding-bottom:64px}
-    .topbar{padding:10px 14px;gap:10px}
-    .topbar h2{font-size:15px}
-    .topbar-actions .btn-label{display:none}
-    .topbar-actions .btn{padding:6px 10px}
-    .content{padding:14px}
-    .stats-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+    /* 탑바 */
+    .topbar{padding:10px 14px;gap:8px}
+    .topbar h2{font-size:14px;white-space:nowrap}
+    .topbar-actions{gap:4px;flex-wrap:nowrap;overflow-x:auto}
+    .topbar-actions::-webkit-scrollbar{display:none}
+    .topbar-actions .btn{padding:5px 8px;font-size:12px;white-space:nowrap;flex-shrink:0}
+    /* 콘텐츠 */
+    .content{padding:12px}
+    /* 대시보드 */
+    .stats-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
     .stat-card{padding:14px}
     .stat-card .value{font-size:22px}
     .dash-row{grid-template-columns:1fr;gap:12px}
+    /* 임대인/고객 */
     .landlord-grid{grid-template-columns:1fr}
+    /* 폼 */
     .form-grid{grid-template-columns:1fr}
     .form-grid.col3{grid-template-columns:1fr}
-    .table-toolbar{padding:10px;gap:6px}
-    .search-box{min-width:0}
+    /* 테이블 - 가로 스크롤 */
+    .table-container{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px}
+    .table-container table{min-width:640px}
+    .table-toolbar{padding:10px;gap:6px;flex-wrap:wrap}
+    .search-box{min-width:150px}
     .filter-chips{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
     .filter-chips::-webkit-scrollbar{display:none}
-    .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-    table{min-width:620px}
+    /* 모달 하단 시트 */
     .modal-overlay{align-items:flex-end;padding:0}
     .modal{width:100%;max-width:100%;border-radius:20px 20px 0 0;max-height:92vh}
     .confirm-modal{width:100%;border-radius:20px 20px 0 0}
     .settings-modal{width:100%;border-radius:20px 20px 0 0}
+    /* 상세보기 */
     .detail-grid{grid-template-columns:1fr 1fr;gap:10px}
+    /* 하단 탭바 */
     .mobile-tab-bar{display:block}
-    .toast{bottom:76px;right:12px;left:12px;text-align:center}
+    /* 토스트 */
+    .toast{bottom:80px;right:12px;left:12px;text-align:center}
+    /* 캘린더 */
     .cal-grid{gap:2px}
     .cal-day{min-height:54px;padding:3px}
     .cal-event{font-size:9px;padding:1px 3px}
+    /* 지도 - 사이드패널 숨김, topbar 버튼 숨김 */
     #mapSidePanel{display:none !important}
+    .map-cache-btn{display:none}
+    .topbar-actions select.filter{max-width:90px;font-size:12px;padding:4px 6px}
+    /* 지도 높이 조정 */
+    #kakaoMapContainer{height:calc(100vh - 130px) !important}
   }
 
   @media(min-width:769px) and (max-width:1024px){
@@ -691,7 +711,7 @@
             <option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>단독</option><option>기타</option>
           </select>
           <button class="btn btn-secondary btn-sm" onclick="renderMapPins()">🔄 핀 새로고침</button>
-          <button class="btn btn-secondary btn-sm" onclick="localStorage.removeItem('koyeon_geocache_v1');renderMapPins();showToast('주소 캐시 초기화됨')">🗑 캐시 초기화</button>
+          <button class="btn btn-secondary btn-sm map-cache-btn" onclick="localStorage.removeItem('koyeon_geocache_v1');renderMapPins();showToast('주소 캐시 초기화됨')">🗑 캐시</button>
         </div>
       </div>
       <div id="mapSetupMsg" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 61px);gap:14px;color:var(--text-sm)">
