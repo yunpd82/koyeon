@@ -1403,7 +1403,7 @@ function renderPropertyTable() {
     tr.innerHTML = `
       <td style="font-size:12px;color:var(--text-sm)">${p.id}</td>
       <td style="font-size:11px;white-space:nowrap">${formatDate(p.date)}</td>
-      <td>${p.region||'-'}${p.dong?' '+p.dong:''}</td>
+      <td>${p.region||'-'}${p.dong && !(p.region||'').includes(p.dong)?' '+p.dong:''}</td>
       <td title="${p.address}">${truncate(p.address,22)}</td>
       <td><span class="badge badge-${p.buildingType||''}">${p.buildingType||'-'}</span></td>
       <td><span class="badge badge-${p.dealType||''}">${p.dealType||'-'}</span></td>
