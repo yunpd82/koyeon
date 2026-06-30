@@ -1901,9 +1901,12 @@ function handleSurveyImport(event) {
       const props = loadProperties();
       const dup = props.find(x => x.address === p.address && x.unit === p.unit);
       if (dup) { showToast('이미 등록된 매물입니다: ' + p.address, 'warning'); return; }
+      const privateMemoFromExcel = p._privateMemo || '';
+      delete p._privateMemo;
       const newProp = { ...p, id: genId('P', props) };
       props.push(newProp);
       saveProperties(props);
+      if (privateMemoFromExcel) savePrivateMemo(newProp.id, privateMemoFromExcel);
       renderPropertyTable();
       updateCount();
       showToast('조사표 가져오기 완료! (' + (p.address||'') + ')', 'success');
@@ -1918,43 +1921,16 @@ function handleSurveyImport(event) {
 }
 
 function parseSurveyCells(ws) {
-  // 셀 값 읽기 헬퍼
+  // ── 셀 읽기 헬퍼 (merge된 셀도 원본값 반환) ──
   const cv = coord => {
     const cell = ws[coord];
     if (!cell || cell.v === undefined || cell.v === null) return '';
     return String(cell.v).trim();
   };
-  const isChecked = coord => cv(coord).includes('☑');
+  // 체크박스: ☑ 또는 O/Y 이면 체크됨
+  const isOn = coord => { const v = cv(coord); return v.includes('☑') || v.toUpperCase()==='O' || v.toUpperCase()==='Y'; };
 
-  // 옵션 체크박스
-  const optMap = [['B20','에어컨'],['C20','냉장고'],['E20','인덕션'],
-                  ['F20','전자레인지'],['B21','세탁기'],['C21','붙박이장']];
-  const opts = optMap.filter(([k]) => isChecked(k)).map(([,v]) => v);
-  const extraOpt = cv('E21').replace(/기타옵션/g,'').replace(/,\s*$/, '').trim();
-  if (extraOpt) opts.push(...extraOpt.split(',').map(x=>x.trim()).filter(Boolean));
-  const option = opts.length >= 6 ? '풀옵션' : opts.length >= 2 ? '세미옵션' : opts.length ? '세미옵션' : '없음';
-
-  // 보안
-  const secMap = [['B23','CCTV'],['C23','인터폰'],['D23','도어락']];
-  const security = secMap.filter(([k]) => isChecked(k)).map(([,v]) => v).join(', ');
-
-  // 거래구분
-  const dealRaw = cv('B15');
-  const dealType = ['전세','월세','반전세','매매'].includes(dealRaw) ? dealRaw : '';
-
-  // 주소 + 호수 분리
-  const fullAddr = cv('B7');
-  const unitMatch = fullAddr.match(/(\d+호|옥탑\d*|지하\d*호?)$/);
-  const unit = unitMatch ? unitMatch[1] : '';
-  const address = unitMatch ? fullAddr.slice(0, fullAddr.lastIndexOf(unit)).trim() : fullAddr;
-
-  // 층 정보
-  const floorRaw = cv('B12');
-  const floorMatch = floorRaw.match(/(\d+)[^\d]*(\d+)/);
-  const floorCur   = floorMatch ? floorMatch[1] : (floorRaw.match(/(\d+)/)?.[1]||'');
-  const floorTotal = floorMatch ? floorMatch[2] : '';
-
-  // 날짜 변환 (엑셀 숫자 → 문자열)
+  // ── 날짜 변환 (엑셀 숫자/문자 → YYYY-MM-DD) ──
   const fmtDate = coord => {
     const cell = ws[coord];
     if (!cell) return '';
@@ -1969,36 +1945,88 @@ function parseSurveyCells(ws) {
     return s.slice(0,10);
   };
 
-  // 주차/방향 유효값 검사
-  const parkingRaw = cv('B13');
-  const parking = ['가능','불가','문의'].includes(parkingRaw) ? parkingRaw : '';
-  const dirRaw = cv('B22');
-  const direction = ['남','동','서','북','남동','남서','북동','북서'].includes(dirRaw) ? dirRaw : '';
+  // ── ① 기본 정보 (Row 6~11) ───────────────────
+  // B6=접수일자, D6=매물상태
+  const date        = fmtDate('B6') || new Date().toISOString().slice(0,10);
+  const status      = ['매물확보','광고중','예약','계약완료','보류'].includes(cv('D6'))
+                        ? cv('D6') : '매물확보';
 
+  // B7=주소(B7:D7 merge), F7=호수
+  const address     = cv('B7').trim();
+  const unit        = cv('F7');
+
+  // B8=건물명, D8=권역(구), F8=동
+  const buildingName= cv('B8');
+  const region      = cv('D8');
+  const dong        = cv('F8');
+
+  // B9=건물유형, D9=면적, F9=현재층
+  const buildingType= cv('B9');
+  const area        = cv('D9').replace(/[^0-9.]/g,'');
+  const floorCur    = cv('F9').replace(/[^0-9]/g,'');
+
+  // B10=총층수, D10=방향, F10=주차
+  const floorTotal  = cv('B10').replace(/[^0-9]/g,'');
+  const dirRaw      = cv('D10');
+  const direction   = ['남','동','서','북','남동','남서','북동','북서'].includes(dirRaw) ? dirRaw : '';
+  const parkingRaw  = cv('F10');
+  const parking     = ['가능','불가','문의'].includes(parkingRaw) ? parkingRaw : '';
+
+  // B11=입주가능일, E11=광고채널
+  const moveInRaw   = cv('B11');
+  const moveIn      = ['즉시입주','협의가능'].includes(moveInRaw) ? moveInRaw : (fmtDate('B11') || moveInRaw);
+  const adChannel   = cv('E11');
+
+  // ── ② 거래 조건 (Row 13~14) ──────────────────
+  // B13=거래구분(B13:F13), B14=보증금, D14=월세, F14=관리비
+  const dealRaw  = cv('B13');
+  const dealType = ['전세','월세','반전세','매매'].includes(dealRaw) ? dealRaw : '';
+  const deposit  = cv('B14').replace(/[^0-9.]/g,'');
+  const rent     = cv('D14').replace(/[^0-9.]/g,'');
+  const maintenance = cv('F14').replace(/[^0-9.]/g,'');
+
+  // ── ③ 옵션 (Row 16~17) ───────────────────────
+  // Row16: B=에어컨, C=냉장고, D=인덕션, E=전자레인지, F=세탁기
+  // Row17: B=붙박이장, C=건조기, D=TV, F=기타옵션(텍스트)
+  const opts = [];
+  const optMap16 = [['B','에어컨'],['C','냉장고'],['D','인덕션'],['E','전자레인지'],['F','세탁기']];
+  const optMap17 = [['B','붙박이장'],['C','건조기'],['D','TV']];
+  optMap16.forEach(([col,nm]) => { if(isOn(col+'16')) opts.push(nm); });
+  optMap17.forEach(([col,nm]) => { if(isOn(col+'17')) opts.push(nm); });
+  const extraOpt = cv('F17').replace(/기타옵션/gi,'').trim();
+  if (extraOpt && !['O','o','Y','y','☐','☑'].includes(extraOpt))
+    opts.push(...extraOpt.split(/[,、]/g).map(x=>x.trim()).filter(Boolean));
+  const option = opts.length >= 6 ? '풀옵션' : opts.length >= 2 ? '세미옵션' : opts.length ? '세미옵션' : '없음';
+
+  // ── ④ 보안 (Row 19) ──────────────────────────
+  // B=CCTV, C=인터폰, D=도어락, E=비디오폰, F=카드키
+  const secMap = [['B','CCTV'],['C','인터폰'],['D','도어락'],['E','비디오폰'],['F','카드키']];
+  const security = secMap.filter(([col]) => isOn(col+'19')).map(([,nm]) => nm).join(', ');
+
+  // ── ⑤ 계약·등기 (Row 21) ─────────────────────
+  // B21=등기부확인일, E21=사진촬영, F21=의뢰형태
+  const registryDate = fmtDate('B21') || cv('B21');
+  const photo        = cv('E21').toUpperCase()==='Y' ? 'Y' : 'N';
+  const commission   = cv('F21');
+
+  // ── ⑥ 메모 합산 (Row 23~25) ─────────────────
   const memoLines = [];
   if (security) memoLines.push('보안: ' + security);
+  const extraMemo = cv('B23');
+  if (extraMemo) memoLines.push(extraMemo);
+
+  // ── ⑦ 비공개 메모 (Row 27~29) — 앱에 별도 저장
+  const privateMemoText = cv('B27');
 
   return {
-    date:        fmtDate('B5') || new Date().toISOString().slice(0,10),
-    address,
-    unit,
-    buildingName: '',
-    region:      '',
-    dong:        '',
-    buildingType: '',
-    dealType,
-    deposit:     cv('B17'),
-    rent:        cv('D17'),
-    maintenance: cv('F17'),
-    floorCur,
-    floorTotal,
-    direction,
-    parking,
-    option,
-    moveIn:      fmtDate('F13'),
-    status:      '매물확보',
-    memo:        memoLines.join('\n'),
-    updatedAt:   new Date().toISOString()
+    date, status, address, unit, buildingName,
+    region, dong, buildingType, area,
+    dealType, deposit, rent, maintenance,
+    floorCur, floorTotal, direction, parking,
+    moveIn, adChannel, option, registryDate, photo, commission,
+    memo: memoLines.join('\n'),
+    _privateMemo: privateMemoText,
+    updatedAt: new Date().toISOString()
   };
 }
 
@@ -3048,7 +3076,7 @@ async function showShareView(propId, encodedCfg) {
         <div style="font-size:13px;color:#3a3a3c;line-height:1.6">${prop.memo}</div>
       </div>` : ''}
 
-      <a href="tel:010-XXXX-XXXX" style="display:block;background:#0066cc;color:#fff;border-radius:9999px;padding:16px;text-align:center;font-size:16px;font-weight:600;text-decoration:none;margin-bottom:10px">📞 고연부동산 문의</a>
+      <a href="tel:010-2604-8722" style="display:block;background:#0066cc;color:#fff;border-radius:9999px;padding:16px;text-align:center;font-size:16px;font-weight:600;text-decoration:none;margin-bottom:10px">📞 고연부동산 문의</a>
       <div style="text-align:center;font-size:11px;color:#aeaeb2;margin-top:8px">고연부동산 · 공인중개사 윤종현 · 동대문구 안암로 148</div>
     </div>
   ` : `
