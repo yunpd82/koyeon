@@ -546,8 +546,22 @@
           </div>
           <div style="overflow-x:auto">
             <table>
-              <thead><tr><th>매물번호</th><th style="width:82px;white-space:nowrap">등록일</th><th>권역</th><th>상세주소</th><th>유형</th><th>거래</th><th>보증금</th><th>월세</th><th>면적</th><th>옵션</th><th>상태</th><th>관리</th></tr></thead>
-              <tbody id="propertyTableBody"><tr><td colspan="11" class="no-data">등록된 매물이 없습니다.</td></tr></tbody>
+              <thead><tr>
+  <th onclick="setPropSort('id')"       style="cursor:pointer;user-select:none" title="매물번호 정렬">매물번호<span id="sh_id"></span></th>
+  <th onclick="setPropSort('date')"     style="cursor:pointer;user-select:none;width:82px;white-space:nowrap" title="등록일 정렬">등록일<span id="sh_date"> ▼</span></th>
+  <th onclick="setPropSort('region')"   style="cursor:pointer;user-select:none" title="권역 정렬">권역<span id="sh_region"></span></th>
+  <th style="width:32px">사진</th>
+  <th onclick="setPropSort('address')"  style="cursor:pointer;user-select:none" title="주소 정렬">상세주소<span id="sh_address"></span></th>
+  <th onclick="setPropSort('buildingType')" style="cursor:pointer;user-select:none" title="유형 정렬">유형<span id="sh_buildingType"></span></th>
+  <th onclick="setPropSort('dealType')" style="cursor:pointer;user-select:none" title="거래 정렬">거래<span id="sh_dealType"></span></th>
+  <th onclick="setPropSort('deposit')"  style="cursor:pointer;user-select:none" title="보증금 정렬">보증금<span id="sh_deposit"></span></th>
+  <th onclick="setPropSort('rent')"     style="cursor:pointer;user-select:none" title="월세 정렬">월세<span id="sh_rent"></span></th>
+  <th onclick="setPropSort('area')"     style="cursor:pointer;user-select:none" title="면적 정렬">면적<span id="sh_area"></span></th>
+  <th onclick="setPropSort('option')"   style="cursor:pointer;user-select:none" title="옵션 정렬">옵션<span id="sh_option"></span></th>
+  <th onclick="setPropSort('status')"   style="cursor:pointer;user-select:none" title="상태 정렬">상태<span id="sh_status"></span></th>
+  <th>관리</th>
+</tr></thead>
+              <tbody id="propertyTableBody"><tr><td colspan="13" class="no-data">등록된 매물이 없습니다.</td></tr></tbody>
             </table>
           </div>
           <div class="table-footer"><span id="tableCount">0건</span><span id="tableSummary"></span></div>
@@ -1390,6 +1404,15 @@ function renderDashboard() {
 // ============================================================
 // PROPERTIES TABLE
 // ============================================================
+let _propSortKey = 'date';
+let _propSortDir = -1; // -1=내림차순(최신), 1=오름차순
+
+function setPropSort(key) {
+  if (_propSortKey === key) { _propSortDir *= -1; }
+  else { _propSortKey = key; _propSortDir = key==='date'?-1:1; }
+  renderPropertyTable();
+}
+
 function resetPropertyFilters() {
   ['searchInput','filterRegion','filterDepositMin','filterDepositMax','filterRentMin','filterRentMax'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
@@ -1433,7 +1456,23 @@ function renderPropertyTable() {
     if (moveInOnly && (p.moveIn||'').trim() !== '즉시입주') return false;
     if (q && !`${p.address} ${p.buildingName} ${p.memo} ${p.region} ${p.dong||''} ${p.id||''}`.toLowerCase().includes(q)) return false;
     return true;
-  }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  });
+
+  // 정렬
+  const numFields = ['deposit','rent','area'];
+  filtered.sort((a,b) => {
+    let av = a[_propSortKey]||'', bv = b[_propSortKey]||'';
+    if (numFields.includes(_propSortKey)) { av=parseFloat(av)||0; bv=parseFloat(bv)||0; }
+    if (av < bv) return -_propSortDir;
+    if (av > bv) return  _propSortDir;
+    return 0;
+  });
+
+  // 정렬 아이콘 갱신
+  ['id','date','region','address','buildingType','dealType','deposit','rent','area','option','status'].forEach(k=>{
+    const el=document.getElementById('sh_'+k);
+    if(el) el.textContent = k===_propSortKey ? (_propSortDir===1?' ▲':' ▼') : '';
+  });
 
   const tbody = document.getElementById('propertyTableBody');
   tbody.innerHTML = '';
@@ -1445,10 +1484,16 @@ function renderPropertyTable() {
   }
   filtered.forEach(p => {
     const tr = document.createElement('tr');
+    const thumbUrl = (()=>{
+      if(!p.photoLink) return '';
+      try{ const arr=JSON.parse(p.photoLink); return Array.isArray(arr)?arr[0]||'':p.photoLink; }
+      catch(e){ return p.photoLink; }
+    })();
     tr.innerHTML = `
       <td style="font-size:12px;color:var(--text-sm)">${p.id}</td>
       <td style="font-size:11px;white-space:nowrap">${formatDate(p.date)}</td>
       <td>${p.region||'-'}${p.dong && !(p.region||'').includes(p.dong)?' '+p.dong:''}</td>
+      <td style="padding:4px;width:38px">${thumbUrl?`<img src="${thumbUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid var(--border)" onclick="viewPhotos('${p.id}')" loading="lazy">`:'<span style="color:var(--text-sm);font-size:11px">없음</span>'}</td>
       <td title="${p.address}${p.unit? ' '+p.unit+'호':''}">${truncate(p.address,20)}${p.unit?'<span style="color:var(--primary);font-weight:600"> '+p.unit+'호</span>':''}</td>
       <td><span class="badge badge-${p.buildingType||''}">${p.buildingType||'-'}</span></td>
       <td><span class="badge badge-${p.dealType||''}">${p.dealType||'-'}</span></td>
@@ -2512,6 +2557,7 @@ function openRecord(type) {
 // ============================================================
 let _kakaoMapObj = null;
 let _kakaoMarkers = [];
+let _kakaoMarkerData = []; // propId per marker
 const GEOCACHE_KEY = 'koyeon_geocache_v1';
 
 function initMapPage() {
@@ -2579,6 +2625,8 @@ function filterMapSideList() {
   const deals = allDealBtn?.classList.contains('chip-active') ? [] :
     [...(dealGroup?.querySelectorAll('.chip.chip-active')||[])].map(c=>c.dataset.val).filter(Boolean);
 
+  // 표시할 propId 세트
+  const visIds = new Set();
   const cards = document.querySelectorAll('#mapSideList [data-prop-id]');
   let shown = 0;
   cards.forEach(card => {
@@ -2592,10 +2640,19 @@ function filterMapSideList() {
     const dlOk    = !deals.length    || deals.includes(deal);
     const vis     = qOk && stOk && dlOk;
     card.style.display = vis ? '' : 'none';
-    if (vis) shown++;
+    if (vis) { shown++; visIds.add(id); }
   });
   const countEl = document.getElementById('mapSideCount');
   if (countEl) countEl.textContent = shown+'건';
+
+  // 지도 마커 표시/숨김
+  if (_kakaoMarkers && _kakaoMarkerData) {
+    _kakaoMarkers.forEach((marker, i) => {
+      const pid = _kakaoMarkerData[i];
+      const shouldShow = !cards.length || visIds.has(pid);
+      marker.setMap(shouldShow ? _kakaoMapObj : null);
+    });
+  }
 }
 
 async function renderMapPins() {
@@ -2604,6 +2661,7 @@ async function renderMapPins() {
   // 기존 핀 제거
   _kakaoMarkers.forEach(m => m.setMap(null));
   _kakaoMarkers = [];
+  _kakaoMarkerData = [];
 
   const statusF = document.getElementById('mapStatusFilter')?.value || '';
   const typeF   = document.getElementById('mapTypeFilter')?.value   || '';
@@ -2681,6 +2739,7 @@ async function renderMapPins() {
     });
     marker._info = info;
     _kakaoMarkers.push(marker);
+      _kakaoMarkerData.push(p.id);
   }
 
   // 캐시 저장
