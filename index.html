@@ -1875,6 +1875,7 @@ function renderPropertyTable() {
         <button class="icon-btn" onclick="copyShareLink('${p.id}')" title="공유 링크 복사">🔗</button>
         ${p.naverNo?`<button class="icon-btn" onclick="window.open('https://m.land.naver.com/article/info/${p.naverNo}','_blank')" title="네이버 매물 확인">🏷</button>`:''}
         ${p.photoLink?`<button class="icon-btn" onclick="viewPhotos('${p.id}')" title="사진 보기">📸</button>`:''}
+        <button class="icon-btn" onclick="duplicateProperty('${p.id}')" title="매물 복사">📋</button>
         <button class="icon-btn" onclick="openPropertyModal('${p.id}')" title="수정">✏️</button>
         <button class="icon-btn" onclick="deleteProperty('${p.id}')" title="삭제">🗑</button>
       </td>`;
@@ -2260,6 +2261,27 @@ function fmtMoney(v) {
 function truncate(str, len) {
   if (!str) return '-';
   return str.length > len ? str.slice(0, len) + '…' : str;
+}
+
+function duplicateProperty(id) {
+  const props = loadProperties();
+  const src = props.find(p => p.id === id);
+  if (!src) return;
+  if (!confirm(`[${src.address}${src.unit ? ' '+src.unit+'호' : ''}] 매물을 복사하시겠습니까?\n\n복사된 매물은 상태가 "확인중"으로 변경됩니다.`)) return;
+  const newProp = {
+    ...src,
+    id: genId('P', props),
+    date: new Date().toISOString().slice(0,10),
+    status: '확인중',
+    naverNo: '',          // 네이버번호는 초기화
+    adChannel: '',        // 광고채널 초기화
+    registryDate: '',     // 등기열람일 초기화
+  };
+  props.push(newProp);
+  saveProperties(props);
+  renderPropertyTable();
+  renderDashboard();
+  showToast(`[${src.address}${src.unit ? ' '+src.unit+'호' : ''}] 복사 완료 → ${newProp.id}`, 'success');
 }
 
 function genId(prefix, arr) {
