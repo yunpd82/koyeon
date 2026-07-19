@@ -305,6 +305,24 @@
   .record-card .r-desc{font-size:12px;color:var(--text-sm);line-height:1.5}
   .record-card .r-link{font-size:11px;color:var(--primary);margin-top:4px}
 
+  /* ── 계산기 ──────────────────────────────── */
+  .calc-tab{padding:7px 14px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s}
+  .calc-tab:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .calc-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:700px){.calc-grid{grid-template-columns:1fr}}
+  .calc-inputs{display:flex;flex-direction:column;gap:12px}
+  .calc-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  .calc-result{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;min-height:200px}
+  .result-placeholder{color:var(--text-sm);text-align:center;margin-top:40px;font-size:14px}
+  .result-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+  .result-row:last-child{border-bottom:none}
+  .result-label{font-size:12px;color:var(--text-sm)}
+  .result-value{font-size:14px;font-weight:600;color:var(--text)}
+  .result-highlight{font-size:18px;font-weight:700;color:var(--primary)}
+  .result-section{margin-top:12px;padding-top:12px;border-top:2px solid var(--primary)}
+  .result-warn{font-size:11px;color:#f59e0b;margin-top:10px;padding:8px;background:#fffbeb;border-radius:6px;border:1px solid #fde68a}
+
   /* ── 고객관리 ──────────────────────────────── */
   .customer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .customer-card{background:var(--card);border-radius:18px;padding:18px;border:var(--hairline);position:relative}
@@ -394,6 +412,10 @@
       <div class="nav-item" onclick="showPage('matching')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         자동매칭
+      </div>
+      <div class="nav-item" onclick="showPage('calculator')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>
+        부동산 계산기
       </div>
       <div class="nav-item" onclick="openSettings()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -1146,6 +1168,342 @@
           <div id="matchingCustomerInfo" style="flex:1;font-size:13px;color:var(--text-sm);padding:4px 0"></div>
         </div>
         <div id="matchingResults"><div class="no-match">고객을 선택하고 매칭 실행을 눌러주세요.</div></div>
+      </div>
+    </div>
+
+    <!-- ===== 계산기 페이지 ===== -->
+    <div id="page-calculator" class="page">
+      <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamburger" onclick="toggleSidebar()" title="메뉴"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><h2>🧮 부동산 계산기</h2></div></div>
+      <div class="content" style="padding:16px">
+        <!-- 계산기 탭 -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:10px">
+          <button class="calc-tab active" onclick="showCalcTab('commission')" id="ctab-commission">중개보수</button>
+          <button class="calc-tab" onclick="showCalcTab('jeonwol')" id="ctab-jeonwol">전월세전환</button>
+          <button class="calc-tab" onclick="showCalcTab('area')" id="ctab-area">면적환산</button>
+          <button class="calc-tab" onclick="showCalcTab('yield')" id="ctab-yield">임대수익률</button>
+          <button class="calc-tab" onclick="showCalcTab('acquisition')" id="ctab-acquisition">취득세</button>
+          <button class="calc-tab" onclick="showCalcTab('loan')" id="ctab-loan">대출이자</button>
+          <button class="calc-tab" onclick="showCalcTab('transfer')" id="ctab-transfer">양도소득세</button>
+          <button class="calc-tab" onclick="showCalcTab('property')" id="ctab-property">보유세</button>
+          <button class="calc-tab" onclick="showCalcTab('inherit')" id="ctab-inherit">상속세</button>
+        </div>
+
+        <!-- ① 중개보수 -->
+        <div id="cpanel-commission" class="calc-panel">
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">중개보수 계산기</h3>
+              <div class="form-group">
+                <label>거래 유형</label>
+                <select class="form-control" id="cc_type" onchange="calcCommission()">
+                  <option value="rent">임대 (전세·월세)</option>
+                  <option value="sale">매매</option>
+                </select>
+              </div>
+              <div class="form-group" id="cc_deposit_wrap">
+                <label>보증금 (만원)</label>
+                <input type="number" class="form-control" id="cc_deposit" placeholder="예: 5000" oninput="calcCommission()">
+              </div>
+              <div class="form-group" id="cc_rent_wrap">
+                <label>월세 (만원, 없으면 0)</label>
+                <input type="number" class="form-control" id="cc_rent" placeholder="예: 60" value="0" oninput="calcCommission()">
+              </div>
+              <div class="form-group" id="cc_sale_wrap" style="display:none">
+                <label>매매가 (만원)</label>
+                <input type="number" class="form-control" id="cc_sale" placeholder="예: 30000" oninput="calcCommission()">
+              </div>
+              <div class="form-group">
+                <label>협의 요율 (%, 비워두면 법정 상한)</label>
+                <input type="number" class="form-control" id="cc_custom_rate" placeholder="법정 상한 자동 적용" step="0.01" oninput="calcCommission()">
+              </div>
+            </div>
+            <div class="calc-result" id="cc_result">
+              <div class="result-placeholder">거래 정보를 입력하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ② 전월세전환 -->
+        <div id="cpanel-jeonwol" class="calc-panel" style="display:none">
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">전월세전환 계산기</h3>
+              <div class="form-group">
+                <label>전환 방향</label>
+                <select class="form-control" id="jw_dir" onchange="calcJeonwol()">
+                  <option value="to_monthly">전세 → 월세 전환</option>
+                  <option value="to_jeon">월세 → 전세 전환</option>
+                </select>
+              </div>
+              <div class="form-group" id="jw_jeon_wrap">
+                <label>전세금 (만원)</label>
+                <input type="number" class="form-control" id="jw_jeon" placeholder="예: 15000" oninput="calcJeonwol()">
+              </div>
+              <div class="form-group" id="jw_newdeposit_wrap">
+                <label>전환 후 보증금 (만원)</label>
+                <input type="number" class="form-control" id="jw_newdeposit" placeholder="예: 3000" oninput="calcJeonwol()">
+              </div>
+              <div class="form-group" id="jw_monthly_wrap" style="display:none">
+                <label>현재 보증금 (만원)</label>
+                <input type="number" class="form-control" id="jw_cur_deposit" placeholder="예: 3000" oninput="calcJeonwol()">
+              </div>
+              <div class="form-group" id="jw_monthly_rent_wrap" style="display:none">
+                <label>월세 (만원)</label>
+                <input type="number" class="form-control" id="jw_monthly_rent" placeholder="예: 60" oninput="calcJeonwol()">
+              </div>
+              <div class="form-group">
+                <label>전환율 (%)</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="number" class="form-control" id="jw_rate" value="5.0" step="0.1" oninput="calcJeonwol()" style="flex:1">
+                  <button class="btn btn-secondary btn-sm" onclick="document.getElementById('jw_rate').value=5.0;calcJeonwol()">법정(5%)</button>
+                </div>
+              </div>
+            </div>
+            <div class="calc-result" id="jw_result">
+              <div class="result-placeholder">정보를 입력하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ③ 면적환산 -->
+        <div id="cpanel-area" class="calc-panel" style="display:none">
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">면적환산 계산기</h3>
+              <div class="form-group">
+                <label>㎡ 입력</label>
+                <input type="number" class="form-control" id="area_sqm" placeholder="예: 33" step="0.01" oninput="calcArea('sqm')">
+              </div>
+              <div style="text-align:center;padding:8px;color:var(--text-sm)">⇅ 양방향 실시간 변환</div>
+              <div class="form-group">
+                <label>평 입력</label>
+                <input type="number" class="form-control" id="area_pyeong" placeholder="예: 10" step="0.01" oninput="calcArea('pyeong')">
+              </div>
+              <div class="form-group" style="margin-top:16px">
+                <label>건물 유형</label>
+                <select class="form-control" id="area_type" onchange="calcArea('sqm')">
+                  <option value="0">선택 안함</option>
+                  <option value="0.6">오피스텔 (전용률 60% 기준)</option>
+                  <option value="0.75">아파트 (전용률 75% 기준)</option>
+                </select>
+              </div>
+            </div>
+            <div class="calc-result" id="area_result">
+              <div class="result-placeholder">면적을 입력하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ④ 임대수익률 -->
+        <div id="cpanel-yield" class="calc-panel" style="display:none">
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">임대수익률 계산기</h3>
+              <div class="form-group">
+                <label>매매가 (만원)</label>
+                <input type="number" class="form-control" id="yd_price" placeholder="예: 20000" oninput="calcYield()">
+              </div>
+              <div class="form-group">
+                <label>보증금 (만원)</label>
+                <input type="number" class="form-control" id="yd_deposit" placeholder="예: 2000" value="0" oninput="calcYield()">
+              </div>
+              <div class="form-group">
+                <label>월세 (만원)</label>
+                <input type="number" class="form-control" id="yd_rent" placeholder="예: 80" oninput="calcYield()">
+              </div>
+              <div class="form-group">
+                <label>연간 관리비 등 지출 (만원, 없으면 0)</label>
+                <input type="number" class="form-control" id="yd_cost" placeholder="예: 100" value="0" oninput="calcYield()">
+              </div>
+            </div>
+            <div class="calc-result" id="yd_result">
+              <div class="result-placeholder">금액을 입력하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑤ 취득세 -->
+        <div id="cpanel-acquisition" class="calc-panel" style="display:none">
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">취득세 계산기</h3>
+              <div class="form-group">
+                <label>취득 유형</label>
+                <select class="form-control" id="at_type" onchange="calcAcquisition()">
+                  <option value="buy">매매</option>
+                  <option value="gift">증여</option>
+                  <option value="new">신축·분양</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>주택 수 (취득 후)</label>
+                <select class="form-control" id="at_count" onchange="calcAcquisition()">
+                  <option value="1">1주택</option>
+                  <option value="2">2주택</option>
+                  <option value="3">3주택 이상</option>
+                  <option value="corp">법인</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>지역 구분</label>
+                <select class="form-control" id="at_area" onchange="calcAcquisition()">
+                  <option value="adj">조정대상지역</option>
+                  <option value="non">비조정지역</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>거래가액 (만원)</label>
+                <input type="number" class="form-control" id="at_price" placeholder="예: 50000" oninput="calcAcquisition()">
+              </div>
+              <small style="color:var(--text-sm);font-size:11px">※ 오피스텔은 업무용 기준 적용. 실제 세율은 상황에 따라 달라질 수 있습니다.</small>
+            </div>
+            <div class="calc-result" id="at_result">
+              <div class="result-placeholder">정보를 입력하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑥ 대출이자 -->
+        <div id="cpanel-loan" class="calc-panel" style="display:none">
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">대출이자 계산기</h3>
+              <div class="form-group">
+                <label>대출금액 (만원)</label>
+                <input type="number" class="form-control" id="ln_amount" placeholder="예: 20000" oninput="calcLoan()">
+              </div>
+              <div class="form-group">
+                <label>연이자율 (%)</label>
+                <input type="number" class="form-control" id="ln_rate" placeholder="예: 4.5" step="0.01" value="4.5" oninput="calcLoan()">
+              </div>
+              <div class="form-group">
+                <label>대출 기간 (년)</label>
+                <input type="number" class="form-control" id="ln_years" placeholder="예: 30" value="30" oninput="calcLoan()">
+              </div>
+              <div class="form-group">
+                <label>상환 방식</label>
+                <select class="form-control" id="ln_method" onchange="calcLoan()">
+                  <option value="equal_payment">원리금균등</option>
+                  <option value="equal_principal">원금균등</option>
+                  <option value="bullet">만기일시</option>
+                </select>
+              </div>
+            </div>
+            <div class="calc-result" id="ln_result">
+              <div class="result-placeholder">대출 정보를 입력하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑦ 양도소득세 -->
+        <div id="cpanel-transfer" class="calc-panel" style="display:none">
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">양도소득세 계산기 <small style="font-size:12px;color:var(--text-sm)">(간이)</small></h3>
+              <div class="form-group">
+                <label>취득가액 (만원)</label>
+                <input type="number" class="form-control" id="tr_buy" placeholder="예: 20000" oninput="calcTransfer()">
+              </div>
+              <div class="form-group">
+                <label>양도가액 (만원)</label>
+                <input type="number" class="form-control" id="tr_sell" placeholder="예: 35000" oninput="calcTransfer()">
+              </div>
+              <div class="form-group">
+                <label>필요경비 (만원, 취득세·중개비 등)</label>
+                <input type="number" class="form-control" id="tr_cost" placeholder="예: 800" value="0" oninput="calcTransfer()">
+              </div>
+              <div class="form-group">
+                <label>보유 기간 (년)</label>
+                <input type="number" class="form-control" id="tr_years" placeholder="예: 3" oninput="calcTransfer()">
+              </div>
+              <div class="form-group">
+                <label>1세대 1주택 비과세 적용</label>
+                <select class="form-control" id="tr_exempt" onchange="calcTransfer()">
+                  <option value="no">해당없음</option>
+                  <option value="yes">적용 (2년 이상 보유)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>다주택 중과 여부</label>
+                <select class="form-control" id="tr_heavy" onchange="calcTransfer()">
+                  <option value="no">해당없음</option>
+                  <option value="2">2주택 중과 (+20%p)</option>
+                  <option value="3">3주택 이상 중과 (+30%p)</option>
+                </select>
+              </div>
+              <small style="color:var(--text-sm);font-size:11px">※ 간이 계산기입니다. 장기보유특별공제·지방소득세 등 실제와 다를 수 있습니다.</small>
+            </div>
+            <div class="calc-result" id="tr_result">
+              <div class="result-placeholder">금액을 입력하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑧ 보유세 -->
+        <div id="cpanel-property" class="calc-panel" style="display:none">
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">보유세 계산기 <small style="font-size:12px;color:var(--text-sm)">(재산세 간이)</small></h3>
+              <div class="form-group">
+                <label>공시가격 (만원)</label>
+                <input type="number" class="form-control" id="pt_price" placeholder="예: 20000" oninput="calcPropertyTax()">
+              </div>
+              <div class="form-group">
+                <label>부동산 유형</label>
+                <select class="form-control" id="pt_type" onchange="calcPropertyTax()">
+                  <option value="house">주택 (아파트·단독·다가구)</option>
+                  <option value="officetel">오피스텔 (업무용)</option>
+                  <option value="land">토지</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>주택 수 (1세대 기준)</label>
+                <select class="form-control" id="pt_count" onchange="calcPropertyTax()">
+                  <option value="1">1주택</option>
+                  <option value="2">2주택 이상</option>
+                </select>
+              </div>
+              <small style="color:var(--text-sm);font-size:11px">※ 재산세 + 지방교육세 기준. 종합부동산세는 공시가 합산 12억 초과 시 별도 부과.</small>
+            </div>
+            <div class="calc-result" id="pt_result">
+              <div class="result-placeholder">공시가격을 입력하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑨ 상속세 -->
+        <div id="cpanel-inherit" class="calc-panel" style="display:none">
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">상속세 계산기 <small style="font-size:12px;color:var(--text-sm)">(간이)</small></h3>
+              <div class="form-group">
+                <label>상속 재산 총액 (만원)</label>
+                <input type="number" class="form-control" id="ih_total" placeholder="예: 100000" oninput="calcInherit()">
+              </div>
+              <div class="form-group">
+                <label>채무·공과금 공제 (만원)</label>
+                <input type="number" class="form-control" id="ih_debt" placeholder="예: 5000" value="0" oninput="calcInherit()">
+              </div>
+              <div class="form-group">
+                <label>상속 유형</label>
+                <select class="form-control" id="ih_type" onchange="calcInherit()">
+                  <option value="spouse_child">배우자+자녀</option>
+                  <option value="child_only">자녀만</option>
+                  <option value="spouse_only">배우자만</option>
+                </select>
+              </div>
+              <div class="form-group" id="ih_child_wrap">
+                <label>자녀 수</label>
+                <input type="number" class="form-control" id="ih_children" value="1" min="1" oninput="calcInherit()">
+              </div>
+              <small style="color:var(--text-sm);font-size:11px">※ 기본공제·배우자공제 적용 간이 계산. 실제와 다를 수 있어 세무사 상담을 권장합니다.</small>
+            </div>
+            <div class="calc-result" id="ih_result">
+              <div class="result-placeholder">재산 정보를 입력하세요</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -2030,6 +2388,415 @@ function exportPropertiesExcel() {
   s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
   s.onload = doExport;
   document.head.appendChild(s);
+}
+
+// ============================================================
+// 계산기 (CALCULATOR) 공통
+// ============================================================
+function showCalcTab(name) {
+  document.querySelectorAll('.calc-tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.calc-panel').forEach(el => { el.style.display='none'; });
+  document.getElementById('ctab-'+name).classList.add('active');
+  document.getElementById('cpanel-'+name).style.display='block';
+}
+function fmtW(n){ // 만원 → 억/만 표기
+  if(!n && n!==0) return '-';
+  n = Math.round(n);
+  if(n===0) return '0원';
+  const eok = Math.floor(n/10000);
+  const man = n%10000;
+  if(eok>0 && man>0) return eok+'억 '+man.toLocaleString()+'만원';
+  if(eok>0) return eok+'억원';
+  return n.toLocaleString()+'만원';
+}
+function resultRow(label,value,highlight){
+  return `<div class="result-row"><span class="result-label">${label}</span><span class="${highlight?'result-highlight':'result-value'}">${value}</span></div>`;
+}
+
+// ① 중개보수
+function calcCommission(){
+  const type = document.getElementById('cc_type').value;
+  const isRent = type==='rent';
+  document.getElementById('cc_deposit_wrap').style.display = isRent?'block':'none';
+  document.getElementById('cc_rent_wrap').style.display = isRent?'block':'none';
+  document.getElementById('cc_sale_wrap').style.display = isRent?'none':'block';
+
+  const deposit = parseFloat(document.getElementById('cc_deposit').value)||0;
+  const rent = parseFloat(document.getElementById('cc_rent').value)||0;
+  const sale = parseFloat(document.getElementById('cc_sale').value)||0;
+  const customRate = parseFloat(document.getElementById('cc_custom_rate').value);
+
+  let price, rate, limit, rateStr;
+  if(isRent){
+    price = deposit + rent*100;
+    if(price < deposit) price = deposit; // 보증금이 더 크면 보증금 적용
+    if(price < 5000){ rate=0.5; limit=20; rateStr='0.5% (상한 20만원)'; }
+    else if(price < 10000){ rate=0.4; limit=30; rateStr='0.4% (상한 30만원)'; }
+    else if(price < 30000){ rate=0.3; limit=null; rateStr='0.3%'; }
+    else if(price < 60000){ rate=0.4; limit=null; rateStr='0.4%'; }
+    else { rate=0.8; limit=null; rateStr='0.8%'; }
+  } else {
+    price = sale;
+    if(price < 5000){ rate=0.6; limit=25; rateStr='0.6% (상한 25만원)'; }
+    else if(price < 20000){ rate=0.5; limit=80; rateStr='0.5% (상한 80만원)'; }
+    else if(price < 90000){ rate=0.4; limit=null; rateStr='0.4%'; }
+    else if(price < 120000){ rate=0.5; limit=null; rateStr='0.5%'; }
+    else if(price < 150000){ rate=0.6; limit=null; rateStr='0.6%'; }
+    else { rate=0.7; limit=null; rateStr='0.7%'; }
+  }
+
+  if(!price){ document.getElementById('cc_result').innerHTML='<div class="result-placeholder">금액을 입력하세요</div>'; return; }
+
+  const appliedRate = !isNaN(customRate) ? customRate : rate;
+  let comm = Math.round(price * appliedRate / 100);
+  if(!isNaN(customRate)) rateStr = customRate + '% (협의)';
+  else if(limit) comm = Math.min(comm, limit);
+  const vat = Math.round(comm * 0.1);
+
+  document.getElementById('cc_result').innerHTML =
+    `<div>${resultRow('거래금액 기준',fmtW(price))}` +
+    (isRent && rent>0 ? resultRow('(보증금 + 월세×100)', `${fmtW(deposit)} + ${rent}만×100`):'') +
+    `${resultRow('법정 요율',rateStr)}` +
+    `<div class="result-section">` +
+    `${resultRow('중개보수 (VAT 제외)',fmtW(comm),true)}` +
+    `${resultRow('부가가치세 (10%)',fmtW(vat))}` +
+    `${resultRow('합계 (VAT 포함)',fmtW(comm+vat),true)}` +
+    `</div>` +
+    `<div class="result-warn">※ 법정 상한 요율 이내에서 협의 가능. 위 금액은 최대값입니다.</div></div>`;
+}
+
+// ② 전월세전환
+function calcJeonwol(){
+  const dir = document.getElementById('jw_dir').value;
+  const toMonthly = dir==='to_monthly';
+  document.getElementById('jw_jeon_wrap').style.display = toMonthly?'block':'none';
+  document.getElementById('jw_newdeposit_wrap').style.display = toMonthly?'block':'none';
+  document.getElementById('jw_monthly_wrap').style.display = toMonthly?'none':'block';
+  document.getElementById('jw_monthly_rent_wrap').style.display = toMonthly?'none':'block';
+
+  const rate = parseFloat(document.getElementById('jw_rate').value)||5;
+  const el = document.getElementById('jw_result');
+
+  if(toMonthly){
+    const jeon = parseFloat(document.getElementById('jw_jeon').value)||0;
+    const newDep = parseFloat(document.getElementById('jw_newdeposit').value)||0;
+    if(!jeon){ el.innerHTML='<div class="result-placeholder">전세금을 입력하세요</div>'; return; }
+    const diff = jeon - newDep;
+    if(diff<=0){ el.innerHTML='<div class="result-warn">전환 후 보증금이 전세금보다 큽니다.</div>'; return; }
+    const monthly = Math.round(diff * rate / 100 / 12);
+    el.innerHTML = `<div>
+      ${resultRow('전세금',fmtW(jeon))}
+      ${resultRow('전환 후 보증금',fmtW(newDep))}
+      ${resultRow('전환 금액 (차액)',fmtW(diff))}
+      ${resultRow('적용 전환율',rate+'%')}
+      <div class="result-section">
+      ${resultRow('월세',monthly.toLocaleString()+'만원',true)}
+      ${resultRow('→ 보증금 '+fmtW(newDep)+' / 월세 '+monthly+'만원','',false)}
+      </div>
+    </div>`;
+  } else {
+    const curDep = parseFloat(document.getElementById('jw_cur_deposit').value)||0;
+    const monthlyRent = parseFloat(document.getElementById('jw_monthly_rent').value)||0;
+    if(!monthlyRent){ el.innerHTML='<div class="result-placeholder">월세를 입력하세요</div>'; return; }
+    const jeon = Math.round(curDep + monthlyRent*12/rate*100);
+    el.innerHTML = `<div>
+      ${resultRow('현재 보증금',fmtW(curDep))}
+      ${resultRow('월세',monthlyRent+'만원')}
+      ${resultRow('적용 전환율',rate+'%')}
+      <div class="result-section">
+      ${resultRow('환산 전세금',fmtW(jeon),true)}
+      </div>
+    </div>`;
+  }
+}
+
+// ③ 면적환산
+function calcArea(from){
+  const SQM_PER_PYEONG = 3.30579;
+  const sqmEl = document.getElementById('area_sqm');
+  const pyEl = document.getElementById('area_pyeong');
+  const typeRatio = parseFloat(document.getElementById('area_type').value)||0;
+  let sqm, py;
+  if(from==='sqm'){
+    sqm = parseFloat(sqmEl.value)||0;
+    py = sqm/SQM_PER_PYEONG;
+    pyEl.value = py ? py.toFixed(2) : '';
+  } else {
+    py = parseFloat(pyEl.value)||0;
+    sqm = py*SQM_PER_PYEONG;
+    sqmEl.value = sqm ? sqm.toFixed(2) : '';
+  }
+  if(!sqm && !py){ document.getElementById('area_result').innerHTML='<div class="result-placeholder">면적을 입력하세요</div>'; return; }
+  let extra = '';
+  if(typeRatio>0){
+    const excl = sqm * typeRatio;
+    const exclPy = excl / SQM_PER_PYEONG;
+    extra = `<div class="result-section">${resultRow('전용면적',excl.toFixed(2)+'㎡ / '+exclPy.toFixed(2)+'평',true)}</div>`;
+  }
+  document.getElementById('area_result').innerHTML = `<div>
+    ${resultRow('공급면적 (㎡)',sqm.toFixed(2)+'㎡')}
+    ${resultRow('공급면적 (평)',py.toFixed(2)+'평',true)}
+    ${resultRow('1㎡ = 0.3025평','1평 = 3.3058㎡')}
+    ${extra}
+  </div>`;
+}
+
+// ④ 임대수익률
+function calcYield(){
+  const price = parseFloat(document.getElementById('yd_price').value)||0;
+  const dep = parseFloat(document.getElementById('yd_deposit').value)||0;
+  const rent = parseFloat(document.getElementById('yd_rent').value)||0;
+  const cost = parseFloat(document.getElementById('yd_cost').value)||0;
+  const el = document.getElementById('yd_result');
+  if(!price||!rent){ el.innerHTML='<div class="result-placeholder">매매가와 월세를 입력하세요</div>'; return; }
+  const invest = price - dep; // 실투자금
+  const annualRent = rent*12;
+  const netAnnual = annualRent - cost;
+  const grossYield = (annualRent/price*100).toFixed(2);
+  const netYield = invest>0?(netAnnual/invest*100).toFixed(2):0;
+  el.innerHTML = `<div>
+    ${resultRow('매매가',fmtW(price))}
+    ${resultRow('보증금',fmtW(dep))}
+    ${resultRow('실투자금 (매매가-보증금)',fmtW(invest))}
+    ${resultRow('월세',fmtW(rent))}
+    ${resultRow('연임대료',fmtW(annualRent))}
+    <div class="result-section">
+    ${resultRow('총 수익률 (연임대료/매매가)',grossYield+'%')}
+    ${resultRow('실질 수익률 (순수익/실투자금)',netYield+'%',true)}
+    </div>
+    <div class="result-warn">※ 대출이자·공실·세금 등 미반영 값입니다.</div>
+  </div>`;
+}
+
+// ⑤ 취득세
+function calcAcquisition(){
+  const type = document.getElementById('at_type').value;
+  const count = document.getElementById('at_count').value;
+  const area = document.getElementById('at_area').value;
+  const price = parseFloat(document.getElementById('at_price').value)||0;
+  const el = document.getElementById('at_result');
+  if(!price){ el.innerHTML='<div class="result-placeholder">거래가액을 입력하세요</div>'; return; }
+
+  let rate, rateLabel;
+  if(type==='gift'){ rate=3.5; rateLabel='증여 기본세율 3.5%'; }
+  else if(type==='new'){ rate=2.8; rateLabel='분양·원시취득 2.8%'; }
+  else {
+    // 매매
+    if(count==='corp'){ rate=12; rateLabel='법인 12%'; }
+    else if(count==='3'){ rate = area==='adj'?12:8; rateLabel=`3주택 중과 ${rate}%`; }
+    else if(count==='2'){
+      if(area==='adj'){ rate=8; rateLabel='2주택 조정대상 8%'; }
+      else { // 비조정 2주택은 일반세율
+        if(price<=60000) rate=1; else if(price<=90000) rate=2; else rate=3;
+        rateLabel=`2주택 비조정 일반세율 ${rate}%`;
+      }
+    } else { // 1주택 일반세율
+      if(price<=60000){ rate=1; rateLabel='1% (6억 이하)'; }
+      else if(price<=90000){ rate=2; rateLabel='2% (6억~9억)'; }
+      else { rate=3; rateLabel='3% (9억 초과)'; }
+    }
+  }
+  const acqTax = Math.round(price * rate / 100);
+  const eduTax = Math.round(acqTax * 0.1); // 지방교육세 10%
+  const farmTax = type==='gift'||type==='new'?0:Math.round(price * 0.2 / 100); // 농어촌특별세 0.2% (비과세 제외)
+  const total = acqTax + eduTax + farmTax;
+  el.innerHTML = `<div>
+    ${resultRow('거래가액',fmtW(price))}
+    ${resultRow('적용 세율',rateLabel)}
+    <div class="result-section">
+    ${resultRow('취득세',fmtW(acqTax))}
+    ${resultRow('지방교육세 (취득세×10%)',fmtW(eduTax))}
+    ${resultRow('농어촌특별세 (0.2%)',fmtW(farmTax))}
+    ${resultRow('합계',fmtW(total),true)}
+    </div>
+    <div class="result-warn">※ 오피스텔(업무용)·분양권 등 세율 다름. 실제 납부 전 구청 확인 필요.</div>
+  </div>`;
+}
+
+// ⑥ 대출이자
+function calcLoan(){
+  const amount = (parseFloat(document.getElementById('ln_amount').value)||0)*10000;
+  const annualRate = parseFloat(document.getElementById('ln_rate').value)||0;
+  const years = parseInt(document.getElementById('ln_years').value)||0;
+  const method = document.getElementById('ln_method').value;
+  const el = document.getElementById('ln_result');
+  if(!amount||!annualRate||!years){ el.innerHTML='<div class="result-placeholder">대출 정보를 입력하세요</div>'; return; }
+
+  const r = annualRate/100/12;
+  const n = years*12;
+  let monthly=0, totalInterest=0;
+
+  if(method==='equal_payment'){
+    monthly = Math.round(amount * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1));
+    totalInterest = monthly*n - amount;
+  } else if(method==='equal_principal'){
+    const monthlyPrincipal = amount/n;
+    const firstMonth = monthlyPrincipal + amount*r;
+    const lastMonth = monthlyPrincipal + monthlyPrincipal*r;
+    monthly = Math.round(firstMonth);
+    totalInterest = (firstMonth+lastMonth)/2*n - amount;
+  } else { // bullet
+    monthly = Math.round(amount*r);
+    totalInterest = monthly*n;
+  }
+
+  const label = method==='equal_payment'?'원리금균등':method==='equal_principal'?'원금균등':'만기일시상환';
+  el.innerHTML = `<div>
+    ${resultRow('대출금액',fmtW(amount/10000))}
+    ${resultRow('연이자율',annualRate+'%')}
+    ${resultRow('기간',years+'년 ('+n+'개월)')}
+    ${resultRow('상환방식',label)}
+    <div class="result-section">
+    ${resultRow(method==='equal_principal'?'첫 달 납입액':'월 납입액',Math.round(monthly).toLocaleString()+'원',true)}
+    ${resultRow('총 이자',Math.round(totalInterest).toLocaleString()+'원')}
+    ${resultRow('총 상환액',(Math.round(amount+totalInterest)).toLocaleString()+'원',true)}
+    </div>
+  </div>`;
+}
+
+// ⑦ 양도소득세 (간이)
+function calcTransfer(){
+  const buy = parseFloat(document.getElementById('tr_buy').value)||0;
+  const sell = parseFloat(document.getElementById('tr_sell').value)||0;
+  const cost = parseFloat(document.getElementById('tr_cost').value)||0;
+  const years = parseFloat(document.getElementById('tr_years').value)||0;
+  const exempt = document.getElementById('tr_exempt').value;
+  const heavy = document.getElementById('tr_heavy').value;
+  const el = document.getElementById('tr_result');
+  if(!buy||!sell){ el.innerHTML='<div class="result-placeholder">취득가·양도가를 입력하세요</div>'; return; }
+
+  const gain = sell - buy - cost;
+  if(gain<=0){ el.innerHTML=`<div>${resultRow('양도차익','없음')}${resultRow('양도소득세','0원')}</div>`; return; }
+  if(exempt==='yes' && sell<=120000){ // 1주택 12억 이하 비과세
+    el.innerHTML=`<div>${resultRow('양도차익',fmtW(gain))}<div class="result-section">${resultRow('1세대1주택 비과세','해당','')}</div><div class="result-warn">※ 매도가 12억 초과분은 과세. 2년 이상 거주 요건 확인 필요.</div></div>`;
+    return;
+  }
+
+  // 장기보유특별공제 (일반)
+  let deduction = 0;
+  if(years>=15) deduction=0.30;
+  else if(years>=10) deduction=0.20;
+  else if(years>=5) deduction=0.15;
+  else if(years>=3) deduction=0.06;
+  const deductAmt = Math.round(gain * deduction);
+  const taxBase = gain - deductAmt - 2500; // 기본공제 250만원
+  if(taxBase<=0){ el.innerHTML=`<div>${resultRow('과세표준','없음 (기본공제 내)')}${resultRow('양도소득세','0원',true)}</div>`; return; }
+
+  // 세율
+  let baseRate;
+  if(taxBase<=1400) baseRate=6;
+  else if(taxBase<=5000) baseRate=15;
+  else if(taxBase<=8800) baseRate=24;
+  else if(taxBase<=15000) baseRate=35;
+  else if(taxBase<=30000) baseRate=38;
+  else if(taxBase<=50000) baseRate=40;
+  else if(taxBase<=100000) baseRate=42;
+  else baseRate=45;
+
+  let heavyAdd = heavy==='2'?20:heavy==='3'?30:0;
+  const finalRate = Math.min(baseRate + heavyAdd, 70);
+  const taxAmt = Math.round(taxBase * finalRate / 100);
+  const localTax = Math.round(taxAmt * 0.1);
+
+  el.innerHTML = `<div>
+    ${resultRow('양도차익',fmtW(gain))}
+    ${resultRow('장기보유특별공제 ('+years+'년 '+Math.round(deduction*100)+'%)',(deductAmt?'-'+fmtW(deductAmt):'없음'))}
+    ${resultRow('기본공제','-250만원')}
+    ${resultRow('과세표준',fmtW(Math.max(taxBase,0)))}
+    ${resultRow('적용세율',(heavy!=='no'?baseRate+'%+'+heavyAdd+'%p 중과=':'')+finalRate+'%')}
+    <div class="result-section">
+    ${resultRow('양도소득세',fmtW(taxAmt),true)}
+    ${resultRow('지방소득세 (10%)',fmtW(localTax))}
+    ${resultRow('합계',fmtW(taxAmt+localTax),true)}
+    </div>
+    <div class="result-warn">※ 간이 계산. 단기보유세율·비과세 특례 등 미반영. 세무사 확인 권장.</div>
+  </div>`;
+}
+
+// ⑧ 보유세 (재산세 간이)
+function calcPropertyTax(){
+  const pub = parseFloat(document.getElementById('pt_price').value)||0;
+  const type = document.getElementById('pt_type').value;
+  const el = document.getElementById('pt_result');
+  if(!pub){ el.innerHTML='<div class="result-placeholder">공시가격을 입력하세요</div>'; return; }
+
+  // 공정시장가액비율
+  let fairRatio = type==='house' ? 0.43 : 0.7; // 주택 43%, 기타 70%
+  const base = pub * fairRatio;
+
+  let tax = 0, rateStr='';
+  if(type==='house'){
+    if(base<=600){ tax=base*0.001; rateStr='0.1%'; }
+    else if(base<=1500){ tax=0.6+((base-600)*0.0015); rateStr='0.15%'; }
+    else if(base<=3000){ tax=1.95+((base-1500)*0.0025); rateStr='0.25%'; }
+    else { tax=5.7+((base-3000)*0.004); rateStr='0.4%'; }
+  } else { // 오피스텔 업무용·토지 0.25% 단순 적용
+    tax = base * 0.0025; rateStr='0.25%';
+  }
+  tax = Math.round(tax);
+  const eduTax = Math.round(tax * 0.2);
+  const urbanTax = Math.round(tax * 0.14); // 지역자원시설세 (주택 기준)
+  const total = tax + eduTax;
+
+  const jongboo = pub>120000?'공시가 합산 12억 초과 시 별도 종부세 부과':'종합부동산세 해당없음 (12억 이하)';
+  el.innerHTML = `<div>
+    ${resultRow('공시가격',fmtW(pub))}
+    ${resultRow('공정시장가액비율',Math.round(fairRatio*100)+'%')}
+    ${resultRow('과세표준',fmtW(Math.round(base)))}
+    ${resultRow('재산세율',rateStr)}
+    <div class="result-section">
+    ${resultRow('재산세',fmtW(tax))}
+    ${resultRow('지방교육세 (재산세×20%)',fmtW(eduTax))}
+    ${resultRow('합계 (7월+9월 분납)',fmtW(total),true)}
+    </div>
+    <div class="result-warn">※ ${jongboo}</div>
+    <div class="result-warn">※ 실제 세액은 주택 수·감면 여부 등에 따라 다릅니다.</div>
+  </div>`;
+}
+
+// ⑨ 상속세 (간이)
+function calcInherit(){
+  const total = parseFloat(document.getElementById('ih_total').value)||0;
+  const debt = parseFloat(document.getElementById('ih_debt').value)||0;
+  const type = document.getElementById('ih_type').value;
+  const children = parseInt(document.getElementById('ih_children').value)||1;
+  const el = document.getElementById('ih_result');
+  if(!total){ el.innerHTML='<div class="result-placeholder">상속 재산을 입력하세요</div>'; return; }
+
+  const net = total - debt;
+  // 공제
+  let deduction = 200; // 기초공제 2억
+  let deductDesc = '기초공제 2억';
+  if(type.includes('child')){ deduction += children*500; deductDesc+=', 자녀공제 '+children+'명×5천'; }
+  if(type.includes('spouse')){ deduction = Math.max(deduction, 10000); deductDesc+=', 배우자공제 최소 10억'; }
+  deduction = Math.max(deduction, 500); // 일괄공제 5억 중 큰 것
+  const oneTime = 500;
+  if(oneTime > deduction){ deduction=oneTime; deductDesc='일괄공제 5억'; }
+
+  const taxBase = Math.max(net - deduction, 0);
+  let tax=0;
+  if(taxBase<=10000) tax=taxBase*0.1;
+  else if(taxBase<=50000) tax=1000+(taxBase-10000)*0.2;
+  else if(taxBase<=100000) tax=9000+(taxBase-50000)*0.3;
+  else if(taxBase<=300000) tax=24000+(taxBase-100000)*0.4;
+  else tax=104000+(taxBase-300000)*0.5;
+  tax = Math.round(tax);
+  const credit = Math.round(tax*0.03); // 신고세액공제 3%
+  const finalTax = Math.max(tax-credit,0);
+
+  el.innerHTML = `<div>
+    ${resultRow('상속재산 총액',fmtW(total))}
+    ${resultRow('채무공제','-'+fmtW(debt))}
+    ${resultRow('상속세 과세가액',fmtW(net))}
+    ${resultRow('공제 적용','-'+fmtW(deduction)+' ('+deductDesc+')')}
+    ${resultRow('과세표준',fmtW(taxBase))}
+    <div class="result-section">
+    ${resultRow('산출세액',fmtW(tax))}
+    ${resultRow('신고세액공제 (3%)','-'+fmtW(credit))}
+    ${resultRow('납부세액',fmtW(finalTax),true)}
+    </div>
+    <div class="result-warn">※ 간이 계산. 배우자상속공제·금융재산공제 등 미적용. 반드시 세무사 상담 권장.</div>
+  </div>`;
 }
 
 // SURVEY IMPORT (조사표_클릭형.xlsx → 매물)
