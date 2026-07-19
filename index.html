@@ -355,6 +355,41 @@
   .match-bar-fill.hit{background:#0066cc}
   .match-bar-fill.miss{background:#e5e7eb}
   .no-match{text-align:center;padding:48px;color:var(--text-sm)}
+    /* ── 원장 관리 ── */
+    .ledger-search-bar{display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+    .ledger-search-bar input{flex:1;min-width:200px}
+    .ledger-buildings{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+    .building-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .18s}
+    .building-card:hover{border-color:var(--primary);box-shadow:0 4px 14px rgba(138,21,56,.13);transform:translateY(-2px)}
+    .building-card-title{font-weight:700;font-size:15px;margin-bottom:4px;color:var(--text)}
+    .building-card-meta{font-size:12px;color:var(--text-light);margin-bottom:10px}
+    .building-card-stats{display:flex;gap:6px;flex-wrap:wrap}
+    .lbadge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+    .lbadge-jeonse{background:#d1fae5;color:#065f46}
+    .lbadge-wolse{background:#dbeafe;color:#1e40af}
+    .lbadge-vacant{background:#f3f4f6;color:#6b7280}
+    .lbadge-checking{background:#fef3c7;color:#92400e}
+    .lbadge-done{background:#fee2e2;color:#991b1b}
+    .ledger-back{display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--primary);font-weight:600;margin-bottom:14px;font-size:14px;background:none;border:none;padding:0}
+    .ledger-back:hover{text-decoration:underline}
+    .building-header{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+    .building-header-title{font-size:17px;font-weight:700}
+    .unit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;margin-bottom:16px}
+    .unit-cell{padding:12px 8px 10px;border-radius:10px;cursor:pointer;text-align:center;transition:all .18s;border:2px solid transparent;position:relative}
+    .unit-cell:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+    .unit-cell.uc-jeonse{background:#ecfdf5;border-color:#6ee7b7}
+    .unit-cell.uc-wolse{background:#eff6ff;border-color:#93c5fd}
+    .unit-cell.uc-vacant{background:#f9fafb;border-color:#d1d5db}
+    .unit-cell.uc-checking{background:#fffbeb;border-color:#fcd34d}
+    .unit-cell.uc-done{background:#fef2f2;border-color:#fca5a5}
+    .unit-cell-name{font-weight:700;font-size:13px;margin-bottom:3px;word-break:break-all}
+    .unit-cell-type{font-size:10px;color:#6b7280;margin-bottom:3px}
+    .unit-cell-price{font-size:11px;font-weight:700;color:var(--primary)}
+    .unit-cell-area{font-size:10px;color:#9ca3af;margin-top:2px}
+    .ledger-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-size:11px;align-items:center}
+    .legend-chip{display:flex;align-items:center;gap:4px}
+    .legend-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+
 </style>
 </head>
 <body>
@@ -416,6 +451,10 @@
       <div class="nav-item" onclick="showPage('calculator')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>
         부동산 계산기
+      </div>
+      <div class="nav-item" onclick="showPage('ledger')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        원장 관리
       </div>
       <div class="nav-item" onclick="openSettings()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -1647,6 +1686,50 @@
   </div>
 </div>
 
+<!-- 원장 관리 페이지 -->
+<div id="page-ledger" class="page">
+  <div class="topbar">
+    <div style="font-weight:700;font-size:16px">🏢 원장 관리</div>
+    <div style="font-size:12px;color:var(--text-light)">매물을 건물별·호실별로 관리</div>
+  </div>
+  <div class="content">
+    <!-- 건물 목록 뷰 -->
+    <div id="ledger-list-view">
+      <div class="ledger-search-bar">
+        <input type="text" class="form-control" id="ledger-search" placeholder="🔍 건물명 또는 주소 검색…" oninput="renderLedger()" style="max-width:360px">
+        <div style="font-size:12px;color:var(--text-light)">등록된 매물이 건물별로 자동 분류됩니다</div>
+      </div>
+      <div class="ledger-buildings" id="ledger-buildings">
+        <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-light)">
+          <div style="font-size:48px;margin-bottom:12px">🏢</div>
+          <div>매물을 등록하면 원장에 자동으로 표시됩니다</div>
+        </div>
+      </div>
+    </div>
+    <!-- 호실 그리드 뷰 -->
+    <div id="ledger-grid-view" style="display:none">
+      <button class="ledger-back" onclick="backToLedgerList()">← 건물 목록으로</button>
+      <div class="building-header">
+        <div class="building-header-title" id="ledger-building-title"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center" id="ledger-building-stats"></div>
+      </div>
+      <div class="ledger-legend">
+        <span style="color:var(--text-light);margin-right:2px">범례:</span>
+        <span class="legend-chip"><span class="legend-dot" style="background:#ecfdf5;border:1.5px solid #6ee7b7"></span>전세</span>
+        <span class="legend-chip"><span class="legend-dot" style="background:#eff6ff;border:1.5px solid #93c5fd"></span>월세</span>
+        <span class="legend-chip"><span class="legend-dot" style="background:#fffbeb;border:1.5px solid #fcd34d"></span>확인중</span>
+        <span class="legend-chip"><span class="legend-dot" style="background:#f9fafb;border:1.5px solid #d1d5db"></span>공실</span>
+        <span class="legend-chip"><span class="legend-dot" style="background:#fef2f2;border:1.5px solid #fca5a5"></span>거래완료</span>
+      </div>
+      <div class="unit-grid" id="ledger-unit-grid"></div>
+      <div style="margin-top:10px">
+        <button class="btn btn-primary" onclick="openPropertyModal()">+ 호실 추가 등록</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script>
 // ============================================================
 // SETTINGS & GOOGLE SHEETS API
@@ -1768,7 +1851,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const navMap = { dashboard:0, properties:1, landlords:2, map:3, schedule:4, calls:5, requests:6, records:7, customers:8, matching:9 };
+  const navMap = { dashboard:0, properties:1, landlords:2, map:3, schedule:4, calls:5, requests:6, records:7, customers:8, matching:9, calculator:10, ledger:11 };
   if (navMap[name] !== undefined) document.querySelectorAll('.nav-item')[navMap[name]].classList.add('active');
   if (name === 'dashboard')  renderDashboard();
   if (name === 'properties') renderPropertyTable();
@@ -1779,6 +1862,7 @@ function showPage(name) {
   if (name === 'requests')   renderRequestTable();
   if (name === 'customers')  renderCustomers();
   if (name === 'matching')   renderMatching();
+  if (name === 'ledger')     renderLedger();
 }
 
 // ============================================================
@@ -4508,6 +4592,133 @@ function runMatching() {
         <button class="btn btn-secondary btn-sm" onclick="viewProperty('${p.id}')">상세보기</button>
       </div>
     </div>`).join('');
+}
+
+
+// ============================================================
+// 원장 관리
+// ============================================================
+let _ledgerBuilding = null;
+
+function _parseBuildingUnit(addr) {
+  if (!addr) return {building: '', unit: ''};
+  // "경로 XXX호" 또는 "경로 XX층 YYY호" 패턴
+  const m = addr.match(/^(.+?)\s+(\d+호|\d+층)$/);
+  if (m) return {building: m[1].trim(), unit: m[2]};
+  // "건물명, 201호" 콤마 패턴
+  const m2 = addr.match(/^(.+?),\s*(\d+호|\d+층)$/);
+  if (m2) return {building: m2[1].trim(), unit: m2[2]};
+  return {building: addr.trim(), unit: ''};
+}
+
+function _groupByBuilding(props) {
+  const groups = {};
+  props.forEach(p => {
+    const {building, unit} = _parseBuildingUnit(p.address);
+    const key = building || p.address || '주소 미입력';
+    if (!groups[key]) groups[key] = {building: key, units: []};
+    groups[key].units.push(Object.assign({}, p, {_unit: unit || p.address || '-'}));
+  });
+  return groups;
+}
+
+function _ucClass(p) {
+  if (p.status === '거래완료') return 'uc-done';
+  if (p.dealType === '전세') return 'uc-jeonse';
+  if (p.dealType === '월세') return 'uc-wolse';
+  if (p.status === '공실') return 'uc-vacant';
+  return 'uc-checking';
+}
+
+function _ucPrice(p) {
+  const d = p.deposit ? Number(p.deposit) : 0;
+  const r = p.rent ? Number(p.rent) : 0;
+  if (p.dealType === '월세') return d + '/' + r;
+  if (p.dealType === '전세') return '전' + d + '만';
+  if (p.dealType === '매매') return '매' + d + '만';
+  return '-';
+}
+
+function renderLedger() {
+  const props = loadProperties();
+  const qEl = document.getElementById('ledger-search');
+  const q = qEl ? qEl.value.toLowerCase() : '';
+  document.getElementById('ledger-list-view').style.display = 'block';
+  document.getElementById('ledger-grid-view').style.display = 'none';
+  const groups = _groupByBuilding(props);
+  const list = Object.values(groups).filter(g => !q || g.building.toLowerCase().includes(q));
+  const container = document.getElementById('ledger-buildings');
+  if (!list.length) {
+    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-light)"><div style="font-size:48px;margin-bottom:12px">🏢</div><div>' + (q ? '검색 결과 없음' : '매물을 등록하면 원장에 자동 표시됩니다') + '</div></div>';
+    return;
+  }
+  container.innerHTML = list.map(function(g) {
+    const cnt = {
+      total: g.units.length,
+      jeonse: g.units.filter(function(u){return u.dealType==='전세';}).length,
+      wolse: g.units.filter(function(u){return u.dealType==='월세';}).length,
+      vacant: g.units.filter(function(u){return u.status==='공실';}).length,
+      checking: g.units.filter(function(u){return u.status==='확인중';}).length,
+      done: g.units.filter(function(u){return u.status==='거래완료';}).length,
+    };
+    const types = Array.from(new Set(g.units.map(function(u){return u.type;}).filter(Boolean))).join('·');
+    const bkey = encodeURIComponent(g.building);
+    return '<div class="building-card" onclick="showLedgerBuilding(\'' + bkey + '\')">' +
+      '<div class="building-card-title">🏢 ' + g.building + '</div>' +
+      '<div class="building-card-meta">' + (types||'유형 미지정') + ' · 총 ' + cnt.total + '건</div>' +
+      '<div class="building-card-stats">' +
+      (cnt.jeonse ? '<span class="lbadge lbadge-jeonse">전세 '+cnt.jeonse+'</span>' : '') +
+      (cnt.wolse ? '<span class="lbadge lbadge-wolse">월세 '+cnt.wolse+'</span>' : '') +
+      (cnt.checking ? '<span class="lbadge lbadge-checking">확인중 '+cnt.checking+'</span>' : '') +
+      (cnt.vacant ? '<span class="lbadge lbadge-vacant">공실 '+cnt.vacant+'</span>' : '') +
+      (cnt.done ? '<span class="lbadge lbadge-done">완료 '+cnt.done+'</span>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+function showLedgerBuilding(encoded) {
+  _ledgerBuilding = decodeURIComponent(encoded);
+  document.getElementById('ledger-list-view').style.display = 'none';
+  document.getElementById('ledger-grid-view').style.display = 'block';
+  document.getElementById('ledger-building-title').textContent = '🏢 ' + _ledgerBuilding;
+  _renderUnitGrid();
+}
+
+function _renderUnitGrid() {
+  const props = loadProperties();
+  const groups = _groupByBuilding(props);
+  const group = groups[_ledgerBuilding];
+  if (!group) return;
+  const units = group.units;
+  const cnt = {
+    total: units.length,
+    jeonse: units.filter(function(u){return u.dealType==='전세';}).length,
+    wolse: units.filter(function(u){return u.dealType==='월세';}).length,
+    checking: units.filter(function(u){return u.status==='확인중';}).length,
+    vacant: units.filter(function(u){return u.status==='공실';}).length,
+    done: units.filter(function(u){return u.status==='거래완료';}).length,
+  };
+  document.getElementById('ledger-building-stats').innerHTML =
+    '<span style="font-size:12px;color:var(--text-light)">총 '+cnt.total+'건</span>' +
+    (cnt.jeonse ? '<span class="lbadge lbadge-jeonse">전세 '+cnt.jeonse+'</span>' : '') +
+    (cnt.wolse ? '<span class="lbadge lbadge-wolse">월세 '+cnt.wolse+'</span>' : '') +
+    (cnt.checking ? '<span class="lbadge lbadge-checking">확인중 '+cnt.checking+'</span>' : '') +
+    (cnt.vacant ? '<span class="lbadge lbadge-vacant">공실 '+cnt.vacant+'</span>' : '') +
+    (cnt.done ? '<span class="lbadge lbadge-done">완료 '+cnt.done+'</span>' : '');
+  document.getElementById('ledger-unit-grid').innerHTML = units.map(function(p) {
+    return '<div class="unit-cell ' + _ucClass(p) + '" onclick="openPropertyModal(\'' + p.id + '\')">' +
+      '<div class="unit-cell-name">' + p._unit + '</div>' +
+      '<div class="unit-cell-type">' + (p.type||'-') + '</div>' +
+      '<div class="unit-cell-price">' + _ucPrice(p) + '</div>' +
+      '<div class="unit-cell-area">' + (p.area||'-') + '㎡</div>' +
+      '</div>';
+  }).join('');
+}
+
+function backToLedgerList() {
+  _ledgerBuilding = null;
+  document.getElementById('ledger-list-view').style.display = 'block';
+  document.getElementById('ledger-grid-view').style.display = 'none';
 }
 
 // ============================================================
