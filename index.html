@@ -471,6 +471,7 @@
     <!-- PROPERTIES -->
     <div id="page-properties" class="page">
       <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamburger" onclick="toggleSidebar()" title="메뉴"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><h2>🏠 매물 목록</h2></div><div class="topbar-actions">
+          <button class="btn btn-secondary" onclick="exportPropertiesExcel()">📥 엑셀 저장</button>
           <button class="btn btn-secondary" onclick="document.getElementById('surveyFileInput').click()">📋 조사표 가져오기</button>
           <input type="file" id="surveyFileInput" accept=".xlsx" style="display:none" onchange="handleSurveyImport(event)">
           <button class="btn btn-primary" onclick="openPropertyModal()">+ 매물 등록</button>
@@ -559,9 +560,10 @@
   <th onclick="setPropSort('area')"     style="cursor:pointer;user-select:none" title="면적 정렬">면적<span id="sh_area"></span></th>
   <th onclick="setPropSort('option')"   style="cursor:pointer;user-select:none" title="옵션 정렬">옵션<span id="sh_option"></span></th>
   <th onclick="setPropSort('status')"   style="cursor:pointer;user-select:none" title="상태 정렬">상태<span id="sh_status"></span></th>
+  <th onclick="setPropSort('naverNo')" style="cursor:pointer;user-select:none" title="네이버번호 정렬">네이버번호<span id="sh_naverNo"></span></th>
   <th>관리</th>
 </tr></thead>
-              <tbody id="propertyTableBody"><tr><td colspan="13" class="no-data">등록된 매물이 없습니다.</td></tr></tbody>
+              <tbody id="propertyTableBody"><tr><td colspan="14" class="no-data">등록된 매물이 없습니다.</td></tr></tbody>
             </table>
           </div>
           <div class="table-footer"><span id="tableCount">0건</span><span id="tableSummary"></span></div>
@@ -1476,7 +1478,7 @@ function renderPropertyTable() {
   });
 
   // 정렬 아이콘 갱신
-  ['id','date','region','address','buildingType','dealType','deposit','rent','area','option','status'].forEach(k=>{
+  ['id','date','region','address','buildingType','dealType','deposit','rent','area','option','status','naverNo'].forEach(k=>{
     const el=document.getElementById('sh_'+k);
     if(el) el.textContent = k===_propSortKey ? (_propSortDir===1?' ▲':' ▼') : '';
   });
@@ -1509,6 +1511,7 @@ function renderPropertyTable() {
       <td>${p.area?p.area+'㎡':'-'}</td>
       <td>${p.option||'-'}</td>
       <td><span class="badge badge-${p.status||''}">${p.status||'-'}</span>${p.commission==='전속'?'<span style="margin-left:3px;font-size:10px;padding:1px 5px;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:600">전속</span>':''}</td>
+      <td style="font-size:11px">${p.naverNo?`<a href="https://m.land.naver.com/article/info/${p.naverNo}" target="_blank" style="color:var(--primary);text-decoration:none">${p.naverNo}</a>`:'-'}</td>
       <td class="action-btns">
         <button class="icon-btn" onclick="viewProperty('${p.id}')" title="상세">👁</button>
         <button class="icon-btn" onclick="copyShareLink('${p.id}')" title="공유 링크 복사">🔗</button>
@@ -1974,6 +1977,61 @@ function handleImport(event) {
 }
 
 // ============================================================
+// ============================================================
+// EXCEL EXPORT (매물 목록 → xlsx)
+// ============================================================
+function exportPropertiesExcel() {
+  const props = loadProperties();
+  if (!props.length) { alert('저장된 매물이 없습니다.'); return; }
+  // SheetJS 로드
+  function doExport() {
+    const XLSX = window.XLSX;
+    const headers = ['매물번호','등록일','권역','동','주소','호수','건물유형','거래구분','보증금(만원)','월세(만원)','면적(㎡)','층수','총층','방향','주차','입주가능일','옵션','상태','전속여부','광고채널','네이버매물번호','관리비(만원)','메모'];
+    const rows = props.map(p => [
+      p.id||'',
+      p.date||'',
+      p.region||'',
+      p.dong||'',
+      p.address||'',
+      p.unit||'',
+      p.buildingType||'',
+      p.dealType||'',
+      p.deposit||'',
+      p.rent||'',
+      p.area||'',
+      p.floorCur||'',
+      p.floorTotal||'',
+      p.direction||'',
+      p.parking||'',
+      p.moveIn||'',
+      p.option||'',
+      p.status||'',
+      p.commission||'',
+      p.adChannel||'',
+      p.naverNo||'',
+      p.maintenance||'',
+      p.memo||''
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    // 컬럼 너비
+    ws['!cols'] = [
+      {wch:10},{wch:12},{wch:8},{wch:8},{wch:24},{wch:6},{wch:10},{wch:8},
+      {wch:10},{wch:10},{wch:8},{wch:6},{wch:6},{wch:6},{wch:6},{wch:12},
+      {wch:20},{wch:8},{wch:8},{wch:10},{wch:14},{wch:10},{wch:30}
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '매물목록');
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    XLSX.writeFile(wb, `고연부동산_매물목록_${today}.xlsx`);
+    showToast('엑셀 파일이 저장되었습니다!', 'success');
+  }
+  if (window.XLSX) { doExport(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onload = doExport;
+  document.head.appendChild(s);
+}
+
 // SURVEY IMPORT (조사표_클릭형.xlsx → 매물)
 // ============================================================
 function handleSurveyImport(event) {
