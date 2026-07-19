@@ -2341,52 +2341,176 @@ function handleImport(event) {
 function exportPropertiesExcel() {
   const props = loadProperties();
   if (!props.length) { alert('저장된 매물이 없습니다.'); return; }
-  // SheetJS 로드
+
   function doExport() {
-    const XLSX = window.XLSX;
-    const headers = ['매물번호','등록일','권역','동','주소','호수','건물유형','거래구분','보증금(만원)','월세(만원)','면적(㎡)','층수','총층','방향','주차','입주가능일','옵션','상태','전속여부','광고채널','네이버매물번호','관리비(만원)','메모'];
-    const rows = props.map(p => [
-      p.id||'',
-      p.date||'',
-      p.region||'',
-      p.dong||'',
-      p.address||'',
-      p.unit||'',
-      p.buildingType||'',
-      p.dealType||'',
-      p.deposit||'',
-      p.rent||'',
-      p.area||'',
-      p.floorCur||'',
-      p.floorTotal||'',
-      p.direction||'',
-      p.parking||'',
-      p.moveIn||'',
-      p.option||'',
-      p.status||'',
-      p.commission||'',
-      p.adChannel||'',
-      p.naverNo||'',
-      p.maintenance||'',
-      p.memo||''
-    ]);
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    // 컬럼 너비
-    ws['!cols'] = [
-      {wch:10},{wch:12},{wch:8},{wch:8},{wch:24},{wch:6},{wch:10},{wch:8},
-      {wch:10},{wch:10},{wch:8},{wch:6},{wch:6},{wch:6},{wch:6},{wch:12},
-      {wch:20},{wch:8},{wch:8},{wch:10},{wch:14},{wch:10},{wch:30}
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '매물목록');
-    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    XLSX.writeFile(wb, `고연부동산_매물목록_${today}.xlsx`);
-    showToast('엑셀 파일이 저장되었습니다!', 'success');
+    const wb = new ExcelJS.Workbook();
+    wb.creator = '고연부동산';
+    wb.created = new Date();
+
+    const ws = wb.addWorksheet('매물목록', {
+      views: [{ state: 'frozen', ySplit: 4 }],
+      pageSetup: { fitToPage: true, fitToWidth: 1, orientation: 'landscape' }
+    });
+
+    const NCOLS = 23;
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'});
+
+    // ── 색상 팔레트 ──────────────────────
+    const C = {
+      BURGUNDY : 'FFC00000',  // 고연부동산 브랜드 버건디
+      BURGUNDY2: 'FFB33A3A',  // 서브헤더
+      BEIGE    : 'FFF8F1E9',  // 짝수행 배경
+      WHITE    : 'FFFFFFFF',
+      LGRAY    : 'FFF2F2F2',  // info행
+      YELLOW   : 'FFFFF9C4',  // 합계행
+      GREEN    : 'FFD4EDDA',  // 광고중
+      BLUE     : 'FFCCE5FF',  // 계약완료
+      ORANGE   : 'FFFFF3CD',  // 보류
+      RED      : 'FFF8D7DA',  // 삭제
+      TXT_WHITE: 'FFFFFFFF',
+      TXT_BURG : 'FFC00000',
+      TXT_GRAY : 'FF555555',
+      TXT_DARK : 'FF222222',
+    };
+
+    // ── 공통 border 생성 ──
+    function bdr(color='FFD0D0D0', style='thin') {
+      const s = { style, color:{ argb: color } };
+      return { top:s, bottom:s, left:s, right:s };
+    }
+    function boldBdrBottom(color='FFC00000') {
+      return { top:{style:'thin',color:{argb:'FFD0D0D0'}}, bottom:{style:'medium',color:{argb:color}}, left:{style:'thin',color:{argb:'FFD0D0D0'}}, right:{style:'thin',color:{argb:'FFD0D0D0'}} };
+    }
+    function fillSolid(argb){ return { type:'pattern', pattern:'solid', fgColor:{ argb } }; }
+
+    // ── ROW 1: 회사 타이틀 ──────────────
+    ws.addRow([]);
+    ws.mergeCells(1,1,1,NCOLS);
+    const r1 = ws.getRow(1);
+    r1.height = 38;
+    const c1 = ws.getCell('A1');
+    c1.value = '고연부동산 매물목록';
+    c1.font = { name:'맑은 고딕', bold:true, size:16, color:{ argb:C.TXT_WHITE } };
+    c1.alignment = { horizontal:'center', vertical:'middle' };
+    c1.fill = fillSolid(C.BURGUNDY);
+    c1.border = bdr(C.BURGUNDY);
+
+    // ── ROW 2: 출력정보 ──────────────────
+    ws.addRow([]);
+    ws.mergeCells(2,1,2,NCOLS);
+    const r2 = ws.getRow(2);
+    r2.height = 18;
+    const c2 = ws.getCell('A2');
+    const activeCount = props.filter(p=>p.status==='광고중').length;
+    c2.value = `출력일: ${todayStr}    총 ${props.length}건  |  광고중 ${activeCount}건`;
+    c2.font = { name:'맑은 고딕', size:9, color:{ argb:C.TXT_GRAY } };
+    c2.alignment = { horizontal:'right', vertical:'middle' };
+    c2.fill = fillSolid(C.LGRAY);
+
+    // ── ROW 3: 구분선 ────────────────────
+    ws.addRow([]);
+    ws.getRow(3).height = 5;
+
+    // ── ROW 4: 헤더 ─────────────────────
+    const HEADERS = ['매물번호','등록일','권역','동','주소','호수','유형','거래','보증금(만)','월세(만)','면적(㎡)','층','총층','방향','주차','입주가능일','옵션','상태','전속','광고채널','네이버번호','관리비(만)','메모'];
+    const hRow = ws.addRow(HEADERS);
+    hRow.height = 24;
+    hRow.eachCell(cell => {
+      cell.font = { name:'맑은 고딕', bold:true, size:9, color:{ argb:C.TXT_WHITE } };
+      cell.alignment = { horizontal:'center', vertical:'middle', wrapText:false };
+      cell.fill = fillSolid(C.BURGUNDY);
+      cell.border = boldBdrBottom();
+    });
+
+    // ── ROW 5~: 데이터 ──────────────────
+    // 컬럼 정렬 설정
+    const colAlign = {
+      1:'center',2:'center',3:'center',4:'center',5:'left',6:'center',
+      7:'center',8:'center',9:'right',10:'right',11:'right',
+      12:'center',13:'center',14:'center',15:'center',
+      16:'center',17:'left',18:'center',19:'center',
+      20:'center',21:'center',22:'right',23:'left'
+    };
+    // 숫자 포맷 컬럼
+    const numCols = new Set([9,10,11,22]);
+
+    props.forEach((p, idx) => {
+      const isEven = idx%2===0;
+      const vals = [
+        p.id||'', p.date||'', p.region||'', p.dong||'', p.address||'', p.unit||'',
+        p.buildingType||'', p.dealType||'',
+        p.deposit  ? Number(p.deposit)  : '',
+        p.rent     ? Number(p.rent)     : '',
+        p.area     ? Number(p.area)     : '',
+        p.floorCur||'', p.floorTotal||'', p.direction||'', p.parking||'',
+        p.moveIn||'', p.option||'', p.status||'', p.commission||'',
+        p.adChannel||'', p.naverNo||'',
+        p.maintenance ? Number(p.maintenance) : '',
+        p.memo||''
+      ];
+      const dRow = ws.addRow(vals);
+      dRow.height = 17;
+      const rowBg = isEven ? C.BEIGE : C.WHITE;
+
+      dRow.eachCell({ includeEmpty:true }, (cell, colNum) => {
+        // 상태 컬럼(18) 색상
+        let bg = rowBg;
+        if(colNum===18) {
+          const st = p.status||'';
+          if(st==='광고중') bg=C.GREEN;
+          else if(st==='계약완료') bg=C.BLUE;
+          else if(st==='보류') bg=C.ORANGE;
+          else if(st==='삭제') bg=C.RED;
+        }
+        cell.fill = fillSolid(bg);
+        cell.font = { name:'맑은 고딕', size:9, color:{ argb:C.TXT_DARK } };
+        cell.border = bdr();
+        cell.alignment = { horizontal: colAlign[colNum]||'left', vertical:'middle', wrapText: colNum===23 };
+        if(numCols.has(colNum) && cell.value!=='') cell.numFmt = '#,##0';
+      });
+    });
+
+    // ── 합계/요약 행 ─────────────────────
+    const avgDep = props.length ? Math.round(props.reduce((s,p)=>s+(Number(p.deposit)||0),0)/props.length) : 0;
+    const avgRent = props.length ? Math.round(props.filter(p=>p.rent).reduce((s,p)=>s+(Number(p.rent)||0),0)/(props.filter(p=>p.rent).length||1)) : 0;
+    const sumRow = ws.addRow(['합계/평균','','총 '+props.length+'건','','','','','',avgDep,avgRent,'','','','','','','','광고중 '+activeCount+'건','','','','','']);
+    sumRow.height = 20;
+    sumRow.eachCell({ includeEmpty:true }, (cell,colNum) => {
+      cell.font = { name:'맑은 고딕', bold:true, size:9, color:{ argb:C.TXT_BURG } };
+      cell.fill = fillSolid(C.YELLOW);
+      cell.border = { top:{style:'medium',color:{argb:C.BURGUNDY}}, bottom:{style:'thin',color:{argb:'FFD0D0D0'}}, left:{style:'thin',color:{argb:'FFD0D0D0'}}, right:{style:'thin',color:{argb:'FFD0D0D0'}} };
+      if([9,10].includes(colNum) && cell.value) {
+        cell.numFmt='#,##0';
+        cell.alignment={horizontal:'right',vertical:'middle'};
+      } else {
+        cell.alignment={horizontal:'center',vertical:'middle'};
+      }
+    });
+
+    // ── 컬럼 너비 ────────────────────────
+    [10,11,7,7,22,5,8,7,9,9,8,5,5,5,5,11,18,7,5,9,13,8,30].forEach((w,i)=>{ ws.getColumn(i+1).width=w; });
+
+    // ── 자동필터 ─────────────────────────
+    ws.autoFilter = { from:{row:4,column:1}, to:{row:4,column:NCOLS} };
+
+    // ── 파일 저장 ────────────────────────
+    const todayFile = today.toISOString().slice(0,10).replace(/-/g,'');
+    wb.xlsx.writeBuffer().then(buf => {
+      const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download=`고연부동산_매물목록_${todayFile}.xlsx`; a.click();
+      URL.revokeObjectURL(url);
+      showToast('엑셀 파일이 저장되었습니다! 🎉', 'success');
+    });
   }
-  if (window.XLSX) { doExport(); return; }
+
+  if(window.ExcelJS){ doExport(); return; }
   const s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js';
   s.onload = doExport;
+  s.onerror = () => showToast('ExcelJS 로드 실패. 네트워크 확인 후 재시도하세요.','error');
   document.head.appendChild(s);
 }
 
