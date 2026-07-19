@@ -1186,6 +1186,7 @@
           <button class="calc-tab" onclick="showCalcTab('transfer')" id="ctab-transfer">양도소득세</button>
           <button class="calc-tab" onclick="showCalcTab('property')" id="ctab-property">보유세</button>
           <button class="calc-tab" onclick="showCalcTab('inherit')" id="ctab-inherit">상속세</button>
+          <button class="calc-tab" onclick="showCalcTab('jeonse_ins')" id="ctab-jeonse_ins" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">🛡 전세보증보험</button>
         </div>
 
         <!-- ① 중개보수 -->
@@ -1502,6 +1503,94 @@
               <div class="result-placeholder">재산 정보를 입력하세요</div>
             </div>
           </div>
+
+        <!-- ⑩ 전세보증금반환보험 -->
+        <div id="cpanel-jeonse_ins" class="calc-panel" style="display:none">
+          <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#78350f">
+            🛡 <strong>전세보증금반환보험 가입 판정표</strong> — HUG·HF·SGI 공통 기준 (공시가 140% 기준)
+          </div>
+          <div class="calc-grid">
+            <div class="calc-inputs">
+              <h3 class="calc-title">전세보증금반환보험 가입 판정</h3>
+
+              <div class="form-group">
+                <label>주택 유형</label>
+                <select class="form-control" id="ji_type" onchange="calcJeonseIns()">
+                  <option value="apt">공동주택 - APT (KB시세 기준)</option>
+                  <option value="villa">공동주택 - 다세대·빌라 (공시가 기준)</option>
+                  <option value="single">단독·다가구·다중주택 (공시가 기준)</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="ji_kb_wrap">
+                <label>KB 매매시세 / 실거래가 (만원)
+                  <span style="font-size:10px;color:var(--text-sm)">— APT는 직접 입력</span>
+                </label>
+                <input type="number" class="form-control" id="ji_kb" placeholder="예: 50000" oninput="calcJeonseIns()">
+              </div>
+
+              <div class="form-group" id="ji_gonsi_wrap" style="display:none">
+                <label>공시가격 (만원)
+                  <span style="font-size:10px;color:var(--text-sm)">— 공동주택공시가격</span>
+                </label>
+                <input type="number" class="form-control" id="ji_gonsi" placeholder="예: 30000" oninput="calcJeonseIns()">
+              </div>
+
+              <div id="ji_land_wrap" style="display:none">
+                <div class="form-group">
+                  <label>토지 공시지가 (만원)
+                    <span style="font-size:10px;color:var(--text-sm)">— 공시지가×면적㎡</span>
+                  </label>
+                  <input type="number" class="form-control" id="ji_land" placeholder="예: 20000" oninput="calcJeonseIns()">
+                </div>
+                <div class="form-group">
+                  <label>건축물 공시가격 (만원)</label>
+                  <input type="number" class="form-control" id="ji_building" placeholder="예: 10000" oninput="calcJeonseIns()">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>전세보증금 (계약금액, 만원)</label>
+                <input type="number" class="form-control" id="ji_deposit" placeholder="예: 15000" oninput="calcJeonseIns()">
+              </div>
+
+              <div class="form-group">
+                <label>선순위 근저당권 채권최고액 합계 (만원)
+                  <span style="font-size:10px;color:var(--text-sm)">— 없으면 0</span>
+                </label>
+                <input type="number" class="form-control" id="ji_mortgage" placeholder="예: 5000" value="0" oninput="calcJeonseIns()">
+              </div>
+
+              <div class="form-group">
+                <label>선순위 임대차보증금 합계 (만원)
+                  <span style="font-size:10px;color:var(--text-sm)">— 가입자 제외, 없으면 0</span>
+                </label>
+                <input type="number" class="form-control" id="ji_prior_rent" placeholder="예: 0" value="0" oninput="calcJeonseIns()">
+              </div>
+
+              <div class="form-group">
+                <label>전세 계약기간 (개월)</label>
+                <div style="display:flex;gap:8px">
+                  <input type="number" class="form-control" id="ji_months" placeholder="예: 24" value="24" oninput="calcJeonseIns()" style="flex:1">
+                  <button class="btn btn-secondary btn-sm" onclick="document.getElementById('ji_months').value=24;calcJeonseIns()">2년</button>
+                  <button class="btn btn-secondary btn-sm" onclick="document.getElementById('ji_months').value=12;calcJeonseIns()">1년</button>
+                </div>
+              </div>
+            </div>
+            <div class="calc-result" id="ji_result" style="min-height:340px">
+              <div class="result-placeholder">주택 정보를 입력하세요</div>
+            </div>
+          </div>
+          <div style="margin-top:14px;font-size:11px;color:var(--text-sm);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;line-height:1.8">
+            <strong>📌 판정 기준 (HUG 기준)</strong><br>
+            ① 선순위채권액 ≤ 주택가격×60% → 보험 가입 가능<br>
+            ② 가입 가능 금액 = 주택가액(가격×90%) - 선순위채권<br>
+            ③ 전세보증금이 가입가능금액 이내 → 전액 보험 가입<br>
+            ④ 초과 시 → 보험 미달 (보증금 조정 필요)<br>
+            <span style="color:#f59e0b">※ 주택가격 = 공시가 × 140% (APT는 KB시세)</span>
+          </div>
+        </div>
+
         </div>
 
       </div>
@@ -2357,6 +2446,108 @@ function handleImport(event) {
 }
 
 // ============================================================
+// ⑩ 전세보증금반환보험 가입 판정
+function calcJeonseIns() {
+  const type     = document.getElementById('ji_type').value;
+  const deposit  = parseFloat(document.getElementById('ji_deposit').value)||0;
+  const mortgage = parseFloat(document.getElementById('ji_mortgage').value)||0;
+  const priorRent= parseFloat(document.getElementById('ji_prior_rent').value)||0;
+  const months   = parseFloat(document.getElementById('ji_months').value)||24;
+  const el       = document.getElementById('ji_result');
+
+  // 입력 UI 전환
+  document.getElementById('ji_kb_wrap').style.display    = type==='apt'   ?'block':'none';
+  document.getElementById('ji_gonsi_wrap').style.display = type==='villa'  ?'block':'none';
+  document.getElementById('ji_land_wrap').style.display  = type==='single' ?'block':'none';
+
+  // 주택가격 산출
+  let housePrice = 0; // 만원
+  if(type==='apt'){
+    housePrice = parseFloat(document.getElementById('ji_kb').value)||0;
+  } else if(type==='villa'){
+    housePrice = (parseFloat(document.getElementById('ji_gonsi').value)||0) * 1.4;
+  } else {
+    const land  = parseFloat(document.getElementById('ji_land').value)||0;
+    const bldg  = parseFloat(document.getElementById('ji_building').value)||0;
+    housePrice  = (land + bldg) * 1.4;
+  }
+
+  if(!housePrice || !deposit){
+    el.innerHTML = '<div class="result-placeholder">주택가격과 전세보증금을 입력하세요</div>';
+    return;
+  }
+
+  const houseValue  = housePrice * 0.9;      // 주택가액 (가격×90%)
+  const insLimit    = housePrice * 0.6;      // 보증 한도 (가격×60%)
+  const priorTotal  = mortgage + priorRent;  // 선순위채권 합계
+  const debtRatio   = (priorTotal + deposit) / housePrice; // 부채비율
+  const maxIns      = houseValue - priorTotal; // 가입가능 보험금액
+
+  // 가입 가능 여부 판정
+  const canApply   = priorTotal <= insLimit;     // ① 선순위채권 ≤ 60% 한도
+  const fullCover  = deposit <= maxIns;           // ② 전세보증금이 한도 이내
+  const shortage   = Math.max(deposit - maxIns, 0); // 초과 금액
+
+  // 보험료율 산출
+  // 주택유형 코드: 1=APT, 2=단독·다가구·다중, 3=기타(다세대·빌라)
+  const typeCode = type==='apt'?1 : type==='single'?2 : 3;
+  const isOver80 = debtRatio > 0.8;
+  let rate = 0;
+  if(deposit <= 9000){ // 9천만 이하
+    if(typeCode===1) rate = isOver80?0.00128:0.00115;
+    else             rate = isOver80?0.00154:0.00139;
+  } else if(deposit <= 20000){ // 2억 이하
+    if(typeCode===1) rate = isOver80?0.00128:0.00122;
+    else             rate = isOver80?0.00154:0.00146;
+  } else { // 2억 초과
+    if(typeCode===1) rate = isOver80?0.00128:0.00122;
+    else             rate = isOver80?0.00154:0.00146;
+  }
+  const days = Math.round(months * 30.4167);
+  const insAmount = canApply && fullCover ? deposit : (canApply ? maxIns : 0);
+  const insPremium = insAmount > 0 ? Math.round(insAmount * 10000 * rate * days / 365) : 0;
+
+  // 색상
+  const okColor   = '#16a34a';
+  const ngColor   = '#dc2626';
+  const warnColor = '#d97706';
+
+  const judgeColor  = canApply ? okColor : ngColor;
+  const coverColor  = (canApply && fullCover) ? okColor : ngColor;
+  const judgeLabel  = canApply ? '✅ 보험 가입 가능' : '❌ 보험 가입 불가';
+  const coverLabel  = !canApply ? '가입불가 (선순위채권 초과)' : fullCover ? '✅ 전액 보장' : '⚠️ 부분만 보장 (보증금 조정 필요)';
+  const contractLabel = !canApply ? '<span style="color:'+ngColor+';font-weight:700">계약 보류 — 임대인과 협의 필요</span>'
+    : fullCover ? '<span style="color:'+okColor+';font-weight:700">계약 추진 가능</span>'
+    : '<span style="color:'+warnColor+';font-weight:700">보증금 조정 협의 필요</span>';
+
+  el.innerHTML = `
+    <div style="border-bottom:2px solid var(--border);padding-bottom:10px;margin-bottom:10px">
+      <div style="font-size:15px;font-weight:700;color:${judgeColor};text-align:center;padding:8px;background:${canApply?'#f0fdf4':'#fef2f2'};border-radius:8px;border:2px solid ${judgeColor}">${judgeLabel}</div>
+      <div style="text-align:center;margin-top:8px;font-size:13px">${contractLabel}</div>
+    </div>
+    ${resultRow('주택가격 (공시가×140%)', fmtW(housePrice))}
+    ${resultRow('주택가액 (가격×90%)', fmtW(houseValue))}
+    ${resultRow('보증 한도 (가격×60%)', fmtW(insLimit))}
+    ${resultRow('선순위 근저당권', fmtW(mortgage))}
+    ${resultRow('선순위 임대차보증금', fmtW(priorRent))}
+    ${resultRow('선순위채권 합계', '<b>'+fmtW(priorTotal)+'</b>')}
+    ${resultRow('전세보증금', fmtW(deposit))}
+    ${resultRow('부채비율', (debtRatio*100).toFixed(2)+'%'+(debtRatio>0.8?' ⚠️ 80% 초과':''))}
+    <div class="result-section">
+    ${resultRow('보험 가입 가능 금액', '<b style="color:var(--primary)">'+fmtW(Math.max(maxIns,0))+'</b>')}
+    ${shortage>0?resultRow('보증금 조정 필요액', '<span style="color:'+ngColor+'">-'+fmtW(shortage)+'</span>'):''}
+    ${resultRow('보장 여부', '<span style="color:'+(canApply&&fullCover?okColor:ngColor)+'">'+coverLabel+'</span>')}
+    </div>
+    ${insPremium>0?`<div class="result-section">
+    ${resultRow('보증료율', (rate*100).toFixed(4)+'% (연)')}
+    ${resultRow('적용 기간', months+'개월 ('+days+'일)')}
+    ${resultRow('예상 보증보험료', '<b style="color:var(--primary)">'+Math.round(insPremium).toLocaleString()+'원</b>', true)}
+    </div>`:''}
+    <div class="result-warn" style="margin-top:10px">※ HUG·SGI 기준 간이 계산. 실제 인수 여부는 보증기관 심사에 따라 다를 수 있습니다.</div>
+  `;
+}
+
+
 // ============================================================
 // EXCEL EXPORT (매물 목록 → xlsx)
 // ============================================================
