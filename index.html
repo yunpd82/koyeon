@@ -943,6 +943,13 @@
             <select id="p_photo" class="form-control"><option value="">미완료</option><option value="Y">완료</option></select>
           </div>
           <div class="form-group"><label>광고 채널</label><input type="text" id="p_adChannel" class="form-control" placeholder="예: 직방, 네이버"></div>
+          <div class="form-group"><label>🏷 네이버 매물번호</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" id="p_naverNo" class="form-control" placeholder="예: 2489012345" style="flex:1">
+              <button type="button" class="btn btn-secondary btn-sm" style="white-space:nowrap;flex-shrink:0"
+                onclick="(()=>{const v=document.getElementById('p_naverNo').value.trim();if(v)window.open('https://m.land.naver.com/article/info/'+v,'_blank');else alert('매물번호를 입력하세요');})()">네이버 확인</button>
+            </div>
+          </div>
         </div>
         <div class="form-grid" style="margin-top:12px">
           <div class="form-group full"><label>📸 사진</label>
@@ -1505,6 +1512,7 @@ function renderPropertyTable() {
       <td class="action-btns">
         <button class="icon-btn" onclick="viewProperty('${p.id}')" title="상세">👁</button>
         <button class="icon-btn" onclick="copyShareLink('${p.id}')" title="공유 링크 복사">🔗</button>
+        ${p.naverNo?`<button class="icon-btn" onclick="window.open('https://m.land.naver.com/article/info/${p.naverNo}','_blank')" title="네이버 매물 확인">🏷</button>`:''}
         ${p.photoLink?`<button class="icon-btn" onclick="viewPhotos('${p.id}')" title="사진 보기">📸</button>`:''}
         <button class="icon-btn" onclick="openPropertyModal('${p.id}')" title="수정">✏️</button>
         <button class="icon-btn" onclick="deleteProperty('${p.id}')" title="삭제">🗑</button>
@@ -1529,7 +1537,7 @@ function openPropertyModal(id=null) {
   document.getElementById('p_date').value=today;
   ['p_region','p_dong','p_address','p_buildingName','p_unit','p_type','p_area','p_floorCur','p_floorTotal','p_direction',
    'p_parking','p_option','p_dealType','p_deposit','p_rent','p_maintenance','p_moveIn',
-   'p_landlordId','p_commission','p_moveIn','p_registryDate','p_photo','p_adChannel','p_photoLink','p_memo'].forEach(i=>{
+   'p_landlordId','p_commission','p_moveIn','p_registryDate','p_photo','p_adChannel','p_naverNo','p_photoLink','p_memo'].forEach(i=>{
     const el=document.getElementById(i); if(el) el.value='';
   });
   document.getElementById('p_status').value='매물확보';
@@ -1549,7 +1557,7 @@ function openPropertyModal(id=null) {
       p_unit:'unit',p_type:'buildingType',p_area:'area',p_floorCur:'floorCur',p_floorTotal:'floorTotal',p_direction:'direction',
       p_parking:'parking',p_option:'option',p_dealType:'dealType',p_deposit:'deposit',p_rent:'rent',
       p_maintenance:'maintenance',p_landlordId:'landlordId',p_commission:'commission',
-      p_status:'status',p_registryDate:'registryDate',p_photo:'photo',p_adChannel:'adChannel',p_photoLink:'photoLink',p_memo:'memo'};
+      p_status:'status',p_registryDate:'registryDate',p_photo:'photo',p_adChannel:'adChannel',p_naverNo:'naverNo',p_photoLink:'photoLink',p_memo:'memo'};
     Object.entries(fields).forEach(([elId,key])=>{ const el=document.getElementById(elId); if(el) el.value=p[key]||''; });
     toggleRentField();
     // 입주가능일 복원
@@ -1604,6 +1612,7 @@ async function saveProperty() {
     registryDate:document.getElementById('p_registryDate').value,
     photo:document.getElementById('p_photo').value,
     adChannel:document.getElementById('p_adChannel').value,
+    naverNo:document.getElementById('p_naverNo').value.trim(),
     photoLink:document.getElementById('p_photoLink').value,
     memo:document.getElementById('p_memo').value,
     updatedAt:new Date().toISOString()
@@ -1668,6 +1677,7 @@ function viewProperty(id) {
       <div class="detail-item"><label>등기부확인일</label><span>${p.registryDate||'-'}</span></div>
       <div class="detail-item"><label>사진촬영</label><span>${p.photo==='Y'?'✅ 완료':'⬜ 미완료'}</span></div>
       <div class="detail-item"><label>광고채널</label><span>${p.adChannel||'-'}</span></div>
+      <div class="detail-item"><label>네이버 매물번호</label><span>${p.naverNo?`<a href="https://m.land.naver.com/article/info/${p.naverNo}" target="_blank" style="color:var(--primary)">${p.naverNo} ↗</a>`:'-'}</span></div>
       <div class="detail-item full"><label>📸 사진 링크</label><span>${(()=>{if(!p.photoLink)return '-';let urls=[];try{urls=JSON.parse(p.photoLink);}catch(e){urls=[p.photoLink];}if(!Array.isArray(urls))urls=[urls];return urls.map((u,i)=>'<a href="'+u+'" target="_blank" style="color:var(--primary);text-decoration:none">📸 사진'+(urls.length>1?' '+(i+1):'')+' </a>').join('');})()}</span></div>
       <div class="detail-item full"><label>비고/메모</label><span style="white-space:pre-wrap">${p.memo||'-'}</span></div>
       ${loadPrivateMemo(p.id) ? `<div class="detail-item full" style="background:#2c2c0a;border:1px solid #4a4a1a;border-radius:8px;padding:10px;margin-top:8px">
