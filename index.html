@@ -1683,8 +1683,7 @@
       </div>
     </div>
 
-  </div>
-</div>
+  
 
 <!-- 원장 관리 페이지 -->
 <div id="page-ledger" class="page">
@@ -1728,6 +1727,9 @@
     </div>
   </div>
 </div>
+</div>
+</div>
+
 
 
 <script>
@@ -1859,7 +1861,7 @@ function showPage(name) {
     if (mainEl) mainEl.scrollTop = 0;
     window.scrollTo(0, 0);
   });
-  const navMap = { properties:0, landlords:1, map:2, schedule:3, calls:4, requests:5, records:6, customers:7, matching:8, calculator:9, ledger:10 };
+  const navMap = { dashboard:0, properties:1, landlords:2, map:3, schedule:4, calls:5, requests:6, records:7, customers:8, matching:9, calculator:10, ledger:11 };
   if (navMap[name] !== undefined) document.querySelectorAll('.nav-item')[navMap[name]].classList.add('active');
   if (name === 'dashboard')  renderDashboard();
   if (name === 'properties') renderPropertyTable();
