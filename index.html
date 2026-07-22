@@ -1738,91 +1738,7 @@
 // ============================================================
 // 실거래가 조회 (국토교통부 단독·다가구 전월세)
 // ============================================================
-const MARKET_API_KEY = '8374a51f157c2a3854158700edef0a3b415c3c1ee12a7c0caf889245f22a27eb';
-const LAWD_CD_MAP = {
-  '동대문구':'11230','성북구':'11290','광진구':'11215','중랑구':'11260',
-  '노원구':'11350','강북구':'11305','도봉구':'11320','종로구':'11110','중구':'11140'
-};
 
-async function loadMarketPrice(dong, area, dealType, region) {
-  const el = document.getElementById('market-price-result');
-  if (!el) return;
-  el.innerHTML = '<span style="color:var(--text-sm)">⏳ 불러오는 중...</span>';
-
-  const guName = Object.keys(LAWD_CD_MAP).find(k => region && region.includes(k)) || region;
-  const lawdCd = LAWD_CD_MAP[guName] || '11230';
-  const now = new Date();
-  let allItems = [];
-
-  for (let i = 0; i < 3; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const ym = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`;
-    const apiUrl = `https://apis.data.go.kr/1613000/RTMSOBJSvc/getRTMSDataSvcSHRent?serviceKey=${MARKET_API_KEY}&pageNo=1&numOfRows=100&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}`;
-    try {
-      const resp = await fetch(apiUrl, {signal: AbortSignal.timeout(30000)});
-      const text = await resp.text();
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(text, 'text/xml');
-      xml.querySelectorAll('item').forEach(item => {
-        const itemDong = (item.querySelector('법정동')?.textContent||'').trim();
-        // 해당 동 필터 (동 정보 없으면 전체 표시)
-        if (!dong || itemDong.replace('동','').includes(dong.replace('동','')) || dong.replace('동','').includes(itemDong.replace('동',''))) {
-          const itemArea = parseFloat(item.querySelector('전용면적')?.textContent||'0');
-          // 면적 ±15㎡ 필터
-          if (!area || Math.abs(itemArea - parseFloat(area)) <= 15) {
-            allItems.push({
-              년: (item.querySelector('년')?.textContent||'').trim(),
-              월: (item.querySelector('월')?.textContent||'').trim(),
-              동: itemDong,
-              면적: itemArea.toFixed(1),
-              층: (item.querySelector('층')?.textContent||'').trim(),
-              구분: (item.querySelector('거래구분')?.textContent||'').trim(),
-              보증금: parseInt((item.querySelector('보증금액')?.textContent||'0').replace(/,/g,''),10),
-              월세: parseInt((item.querySelector('월세금액')?.textContent||'0').replace(/,/g,''),10)
-            });
-          }
-        }
-      });
-    } catch(e) { console.error('실거래가 API 오류', e); }
-  }
-
-  if (allItems.length === 0) {
-    el.innerHTML = '<span style="color:var(--text-sm)">해당 조건의 실거래 내역이 없습니다.</span>';
-    return;
-  }
-
-  // 최신순 정렬
-  allItems.sort((a,b) => (b.년+b.월) - (a.년+a.월));
-  const rows = allItems.slice(0,10).map(r => {
-    const priceStr = r.구분==='월세'
-      ? `보증금 ${r.보증금.toLocaleString()}만 / 월세 ${r.월세.toLocaleString()}만`
-      : `전세 ${r.보증금.toLocaleString()}만`;
-    return `<tr>
-      <td style="color:var(--text-sm)">${r.년}.${r.월}</td>
-      <td>${r.동}</td>
-      <td>${r.면적}㎡</td>
-      <td>${r.층}층</td>
-      <td><span class="badge badge-${r.구분==='전세'?'전세':'월세'}">${r.구분}</span></td>
-      <td style="font-weight:600">${priceStr}</td>
-    </tr>`;
-  }).join('');
-
-  el.innerHTML = `
-    <div style="font-size:12px;color:var(--text-sm);margin-bottom:8px">최근 3개월 · ${dong||region} · ${area?'±15㎡':'전체 면적'} · 총 ${allItems.length}건</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead>
-        <tr style="border-bottom:1px solid var(--border);color:var(--text-sm)">
-          <th style="text-align:left;padding:4px">계약월</th>
-          <th style="text-align:left;padding:4px">법정동</th>
-          <th style="text-align:left;padding:4px">면적</th>
-          <th style="text-align:left;padding:4px">층</th>
-          <th style="text-align:left;padding:4px">구분</th>
-          <th style="text-align:left;padding:4px">가격</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-}
 
 // SETTINGS & GOOGLE SHEETS API
 // ============================================================
@@ -2319,16 +2235,7 @@ function viewProperty(id) {
         <span style="white-space:pre-wrap;color:#ffe066">${loadPrivateMemo(p.id)}</span>
       </div>` : ''}
     </div>`;
-  // 실거래가 섹션 추가 (중복 방지)
-  if (!document.getElementById('market-price-result')) document.getElementById('detailBody').innerHTML += `
-    <div style="margin-top:16px;padding:16px;background:var(--card);border-radius:12px;border:1px solid var(--border)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <span style="font-weight:700;font-size:14px">📊 인근 실거래가 (단독·다가구)</span>
-        <button onclick="loadMarketPrice('${p.dong||''}','${p.area||''}','${p.dealType||''}','${p.region||''}')"
-          style="padding:5px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">조회</button>
-      </div>
-      <div id="market-price-result" style="font-size:13px;color:var(--text-sm)">조회 버튼을 누르면 최근 3개월 실거래를 불러옵니다.</div>
-    </div>`;
+
   document.getElementById('detailEditBtn').onclick=()=>{ closeModal('detailModal'); openPropertyModal(id); };
   document.getElementById('detailModal').classList.add('open');
 }
