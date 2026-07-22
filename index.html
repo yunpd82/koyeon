@@ -1851,11 +1851,15 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  // 페이지 전환 시 스크롤 초기화
+  // 페이지 전환 시 스크롤 초기화 (레이아웃 리플로우 후 실행)
   const mainEl = document.querySelector('.main');
   if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
-  const navMap = { dashboard:0, properties:1, landlords:2, map:3, schedule:4, calls:5, requests:6, records:7, customers:8, matching:9, calculator:10, ledger:11 };
+  requestAnimationFrame(function() {
+    if (mainEl) mainEl.scrollTop = 0;
+    window.scrollTo(0, 0);
+  });
+  const navMap = { properties:0, landlords:1, map:2, schedule:3, calls:4, requests:5, records:6, customers:7, matching:8, calculator:9, ledger:10 };
   if (navMap[name] !== undefined) document.querySelectorAll('.nav-item')[navMap[name]].classList.add('active');
   if (name === 'dashboard')  renderDashboard();
   if (name === 'properties') renderPropertyTable();
