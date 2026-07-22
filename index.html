@@ -1749,7 +1749,8 @@ async function loadMarketPrice(dong, area, dealType, region) {
   if (!el) return;
   el.innerHTML = '<span style="color:var(--text-sm)">⏳ 불러오는 중...</span>';
 
-  const lawdCd = LAWD_CD_MAP[region] || '11230';
+  const guName = Object.keys(LAWD_CD_MAP).find(k => region && region.includes(k)) || region;
+  const lawdCd = LAWD_CD_MAP[guName] || '11230';
   const now = new Date();
   let allItems = [];
 
@@ -2319,8 +2320,8 @@ function viewProperty(id) {
         <span style="white-space:pre-wrap;color:#ffe066">${loadPrivateMemo(p.id)}</span>
       </div>` : ''}
     </div>`;
-  // 실거래가 섹션 추가
-  document.getElementById('detailBody').innerHTML += `
+  // 실거래가 섹션 추가 (중복 방지)
+  if (!document.getElementById('market-price-result')) document.getElementById('detailBody').innerHTML += `
     <div style="margin-top:16px;padding:16px;background:var(--card);border-radius:12px;border:1px solid var(--border)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <span style="font-weight:700;font-size:14px">📊 인근 실거래가 (단독·다가구)</span>
