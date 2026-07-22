@@ -1757,10 +1757,9 @@ async function loadMarketPrice(dong, area, dealType, region) {
   for (let i = 0; i < 3; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const ym = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`;
-    const apiUrl = `http://openapi.molit.go.kr:8081/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcSHRent?serviceKey=${MARKET_API_KEY}&pageNo=1&numOfRows=100&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}`;
-    const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(apiUrl)}`;
+    const apiUrl = `https://apis.data.go.kr/1613000/RTMSOBJSvc/getRTMSDataSvcSHRent?serviceKey=${MARKET_API_KEY}&pageNo=1&numOfRows=100&LAWD_CD=${lawdCd}&DEAL_YMD=${ym}`;
     try {
-      const resp = await fetch(proxyUrl, {signal: AbortSignal.timeout(30000)});
+      const resp = await fetch(apiUrl, {signal: AbortSignal.timeout(30000)});
       const text = await resp.text();
       const parser = new DOMParser();
       const xml = parser.parseFromString(text, 'text/xml');
