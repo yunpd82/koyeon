@@ -1236,8 +1236,12 @@
               <div class="form-group">
                 <label>거래 유형</label>
                 <select class="form-control" id="cc_type" onchange="calcCommission()">
-                  <option value="rent">임대 (전세·월세)</option>
-                  <option value="sale">매매</option>
+                  <option value="rent">주택 임대 (전세·월세)</option>
+                  <option value="sale">주택 매매</option>
+                  <option value="officetel_rent">주거용 오피스텔 임대</option>
+                  <option value="officetel_sale">주거용 오피스텔 매매</option>
+                  <option value="commercial_rent">상가·건물·오피스텔(비주거) 임대</option>
+                  <option value="commercial_sale">상가·건물·오피스텔(비주거) 매매</option>
                 </select>
               </div>
               <div class="form-group" id="cc_deposit_wrap">
@@ -2853,7 +2857,7 @@ function resultRow(label,value,highlight){
 // ① 중개보수
 function calcCommission(){
   const type = document.getElementById('cc_type').value;
-  const isRent = type==='rent';
+  const isRent = type==='rent' || type==='officetel_rent' || type==='commercial_rent';
   document.getElementById('cc_deposit_wrap').style.display = isRent?'block':'none';
   document.getElementById('cc_rent_wrap').style.display = isRent?'block':'none';
   document.getElementById('cc_sale_wrap').style.display = isRent?'none':'block';
@@ -2864,15 +2868,17 @@ function calcCommission(){
   const customRate = parseFloat(document.getElementById('cc_custom_rate').value);
 
   let price, rate, limit, rateStr;
-  if(isRent){
+
+  if(type==='rent'){
     price = deposit + rent*100;
-    if(price < deposit) price = deposit; // 보증금이 더 크면 보증금 적용
     if(price < 5000){ rate=0.5; limit=20; rateStr='0.5% (상한 20만원)'; }
     else if(price < 10000){ rate=0.4; limit=30; rateStr='0.4% (상한 30만원)'; }
     else if(price < 30000){ rate=0.3; limit=null; rateStr='0.3%'; }
     else if(price < 60000){ rate=0.4; limit=null; rateStr='0.4%'; }
-    else { rate=0.8; limit=null; rateStr='0.8%'; }
-  } else {
+    else if(price < 120000){ rate=0.5; limit=null; rateStr='0.5%'; }
+    else if(price < 150000){ rate=0.6; limit=null; rateStr='0.6%'; }
+    else { rate=0.7; limit=null; rateStr='0.7%'; }
+  } else if(type==='sale'){
     price = sale;
     if(price < 5000){ rate=0.6; limit=25; rateStr='0.6% (상한 25만원)'; }
     else if(price < 20000){ rate=0.5; limit=80; rateStr='0.5% (상한 80만원)'; }
@@ -2880,6 +2886,18 @@ function calcCommission(){
     else if(price < 120000){ rate=0.5; limit=null; rateStr='0.5%'; }
     else if(price < 150000){ rate=0.6; limit=null; rateStr='0.6%'; }
     else { rate=0.7; limit=null; rateStr='0.7%'; }
+  } else if(type==='officetel_rent'){
+    price = deposit + rent*100;
+    rate=0.4; limit=null; rateStr='0.4% (주거용 오피스텔 임대 상한)';
+  } else if(type==='officetel_sale'){
+    price = sale;
+    rate=0.5; limit=null; rateStr='0.5% (주거용 오피스텔 매매 상한)';
+  } else if(type==='commercial_rent'){
+    price = deposit + rent*100;
+    rate=0.9; limit=null; rateStr='0.9% 이하 협의';
+  } else { // commercial_sale
+    price = sale;
+    rate=0.9; limit=null; rateStr='0.9% 이하 협의';
   }
 
   if(!price){ document.getElementById('cc_result').innerHTML='<div class="result-placeholder">금액을 입력하세요</div>'; return; }
@@ -2889,6 +2907,7 @@ function calcCommission(){
   if(!isNaN(customRate)) rateStr = customRate + '% (협의)';
   else if(limit) comm = Math.min(comm, limit);
   const vat = Math.round(comm * 0.1);
+  const isCommercial = type==='commercial_rent' || type==='commercial_sale';
 
   document.getElementById('cc_result').innerHTML =
     `<div>${resultRow('거래금액 기준',fmtW(price))}` +
@@ -2899,7 +2918,7 @@ function calcCommission(){
     `${resultRow('부가가치세 (10%)',fmtW(vat))}` +
     `${resultRow('합계 (VAT 포함)',fmtW(comm+vat),true)}` +
     `</div>` +
-    `<div class="result-warn">※ 법정 상한 요율 이내에서 협의 가능. 위 금액은 최대값입니다.</div></div>`;
+    `<div class="result-warn">${isCommercial?'※ 상가·건물·비주거 오피스텔은 0.9% 이하에서 당사자 간 협의로 결정됩니다.':'※ 법정 상한 요율 이내에서 협의 가능. 위 금액은 최대값입니다.'}</div></div>`;
 }
 
 // ② 전월세전환
