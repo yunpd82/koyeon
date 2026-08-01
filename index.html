@@ -391,6 +391,7 @@
     .legend-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 </head>
 <body>
 
@@ -1078,6 +1079,7 @@
     <div class="modal-body" id="detailBody"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('detailModal')">닫기</button>
+      <button class="btn" id="detailPptBtn" style="background:#16a34a;color:#fff;border:none">📄 고객 자료</button>
       <button class="btn btn-primary" id="detailEditBtn">수정</button>
     </div>
   </div>
@@ -2241,8 +2243,137 @@ function viewProperty(id) {
     </div>`;
 
   document.getElementById('detailEditBtn').onclick=()=>{ closeModal('detailModal'); openPropertyModal(id); };
+  document.getElementById('detailPptBtn').onclick=()=>{ generatePropertySlide(id); };
   document.getElementById('detailModal').classList.add('open');
 }
+
+// ============================================================
+// 고객용 PPT 자료 생성
+// ============================================================
+function generatePropertySlide(id) {
+  const p = loadProperties().find(x => x.id === id);
+  if (!p) return;
+
+  if (typeof PptxGenJS === 'undefined') {
+    showToast('PptxGenJS 라이브러리 로딩 중... 잠시 후 다시 시도하세요.', 'warning');
+    return;
+  }
+
+  const pres = new PptxGenJS();
+  // 기본 레이아웃 10" × 7.5"
+  const slide = pres.addSlide();
+  const W = 10;
+
+  // ── 색상 팔레트 ──
+  const C_DARK    = '1a1a2e';
+  const C_PRIMARY = '4361ee';
+  const C_WHITE   = 'FFFFFF';
+  const C_GRAY    = '64748b';
+  const C_LIGHT   = 'f1f5f9';
+  const C_BORDER  = 'e2e8f0';
+  const C_PRICE   = 'dc2626';
+  const C_RENT    = 'ef4444';
+  const C_JEONSE  = '2563eb';
+  const C_SALE    = '16a34a';
+
+  // ── 헤더 ──
+  slide.addShape(pres.ShapeType.rect, { x:0, y:0, w:W, h:1.3, fill:{color:C_DARK} });
+  slide.addText('고연부동산', {
+    x:0.4, y:0.1, w:6, h:0.7,
+    fontSize:34, bold:true, color:C_WHITE, fontFace:'Malgun Gothic'
+  });
+  slide.addText('서울 동대문구 안암로 148  |  ☎ 02-963-XXXX', {
+    x:0.4, y:0.8, w:7, h:0.38,
+    fontSize:12, color:'94a3b8', fontFace:'Malgun Gothic'
+  });
+
+  // 거래유형 뱃지
+  const dealColor = p.dealType==='전세'?C_JEONSE:(p.dealType==='매매'?C_SALE:C_RENT);
+  slide.addText(p.dealType||'', {
+    x:8.1, y:0.3, w:1.5, h:0.55,
+    fontSize:18, bold:true, color:C_WHITE, align:'center',
+    fill:{color:dealColor}, fontFace:'Malgun Gothic'
+  });
+
+  // ── 주소 ──
+  const addrFull = p.address + (p.unit ? ' ' + p.unit + '호' : '') + (p.buildingName ? '  (' + p.buildingName + ')' : '');
+  slide.addText(addrFull, {
+    x:0.4, y:1.45, w:9.2, h:0.7,
+    fontSize:21, bold:true, color:'1e293b', fontFace:'Malgun Gothic'
+  });
+
+  // ── 가격 박스 ──
+  const priceStr = p.dealType==='전세'
+    ? '전세  ' + fmtMoney(p.deposit) + '만원'
+    : '보증금 ' + fmtMoney(p.deposit) + '만  /  월세 ' + fmtMoney(p.rent) + '만'
+      + (p.maintenance ? '  /  관리비 ' + fmtMoney(p.maintenance) + '만' : '');
+  slide.addShape(pres.ShapeType.rect, { x:0.4, y:2.3, w:9.2, h:0.85, fill:{color:'fef2f2'}, line:{color:'fca5a5',pt:1} });
+  slide.addText(priceStr, {
+    x:0.4, y:2.3, w:9.2, h:0.85,
+    fontSize:20, bold:true, color:C_PRICE, align:'center', fontFace:'Malgun Gothic'
+  });
+
+  // ── 물건 정보 테이블 헤더 ──
+  slide.addShape(pres.ShapeType.rect, { x:0.4, y:3.3, w:9.2, h:0.38, fill:{color:C_BORDER} });
+  slide.addText('물건 정보', {
+    x:0.55, y:3.32, w:9, h:0.34,
+    fontSize:12, bold:true, color:'374151', fontFace:'Malgun Gothic'
+  });
+
+  // 정보 항목 (3열 2행)
+  const floorStr = p.floorCur ? (p.floorCur + '층' + (p.floorTotal ? ' / 총 ' + p.floorTotal + '층' : '')) : (p.floor || '-');
+  const infoRows = [
+    ['건물유형', p.buildingType||'-'],
+    ['전용면적',  p.area ? p.area + '㎡' : '-'],
+    ['층수',     floorStr],
+    ['방향',     p.direction||'-'],
+    ['주차',     p.parking||'-'],
+    ['입주가능일', p.moveIn||'-'],
+  ];
+  infoRows.forEach((item, i) => {
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const x = 0.4 + col * 3.07;
+    const y = 3.78 + row * 0.58;
+    const bg = (row % 2 === 0) ? 'ffffff' : 'f8fafc';
+    slide.addShape(pres.ShapeType.rect, { x:x, y:y, w:3.07, h:0.53, fill:{color:bg} });
+    slide.addText(item[0], { x:x+0.1, y:y+0.04, w:1.1, h:0.45, fontSize:10, color:C_GRAY, fontFace:'Malgun Gothic' });
+    slide.addText(item[1], { x:x+1.1, y:y+0.04, w:1.87, h:0.45, fontSize:12, bold:true, color:'1e293b', fontFace:'Malgun Gothic' });
+  });
+
+  // ── 옵션 ──
+  if (p.option) {
+    slide.addShape(pres.ShapeType.rect, { x:0.4, y:5.05, w:9.2, h:0.42, fill:{color:'eff6ff'}, line:{color:'bfdbfe',pt:1} });
+    slide.addText('✔ 옵션   ' + p.option, {
+      x:0.55, y:5.07, w:9, h:0.38,
+      fontSize:12, color:'1d4ed8', fontFace:'Malgun Gothic'
+    });
+  }
+
+  // ── 메모 ──
+  if (p.memo) {
+    slide.addText('※ ' + p.memo, {
+      x:0.4, y:5.58, w:9.2, h:0.45,
+      fontSize:11, color:C_GRAY, fontFace:'Malgun Gothic', italic:true
+    });
+  }
+
+  // ── 푸터 ──
+  slide.addShape(pres.ShapeType.rect, { x:0, y:6.9, w:W, h:0.6, fill:{color:C_DARK} });
+  slide.addText(
+    '고연부동산  ·  서울 동대문구 안암로 148  ·  ☎ 02-963-XXXX  ·  본 자료는 참고용이며 실제 조건과 다를 수 있습니다.',
+    {
+      x:0.2, y:6.95, w:9.6, h:0.5,
+      fontSize:10, color:'94a3b8', align:'center', fontFace:'Malgun Gothic'
+    }
+  );
+
+  // 파일명에 특수문자 제거
+  const safeName = (p.address||'매물').replace(/[<>:"/\\|?*]/g,'_');
+  pres.writeFile({ fileName: `고연부동산_${safeName}_${p.dealType||''}.pptx` });
+  showToast('📄 고객용 자료가 다운로드됩니다!');
+}
+
 
 function deleteProperty(id) {
   const p=loadProperties().find(x=>x.id===id);
