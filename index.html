@@ -2248,151 +2248,223 @@ function viewProperty(id) {
 }
 
 // ============================================================
-// 고객용 PPT 자료 생성
+// 고객용 PPT 자료 생성 (매물 브리핑 양식)
 // ============================================================
-function generatePropertySlide(id) {
+async function generatePropertySlide(id) {
   const p = loadProperties().find(x => x.id === id);
   if (!p) return;
-
   if (typeof PptxGenJS === 'undefined') {
-    showToast('PptxGenJS 라이브러리 로딩 중... 잠시 후 다시 시도하세요.', 'warning');
+    showToast('라이브러리 로딩 중... 잠시 후 다시 시도하세요.', 'warning');
     return;
   }
+  showToast('📄 브리핑 자료 생성 중...');
 
+  // 사진 URL 파싱
+  let photoUrls = [];
+  if (p.photoLink) {
+    try { photoUrls = JSON.parse(p.photoLink); } catch(e) { photoUrls = [p.photoLink]; }
+    if (!Array.isArray(photoUrls)) photoUrls = [photoUrls];
+    photoUrls = photoUrls.filter(Boolean);
+  }
+
+  // 이미지 → base64 변환 (CORS 우회)
+  async function imgToB64(url) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const c = document.createElement('canvas');
+          c.width = img.naturalWidth; c.height = img.naturalHeight;
+          c.getContext('2d').drawImage(img, 0, 0);
+          resolve(c.toDataURL('image/jpeg', 0.85));
+        } catch(e) { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url + (url.includes('?') ? '&' : '?') + '_r=' + Date.now();
+    });
+  }
+
+  const [img1, img2, img3] = await Promise.all([
+    photoUrls[0] ? imgToB64(photoUrls[0]) : Promise.resolve(null),
+    photoUrls[1] ? imgToB64(photoUrls[1]) : Promise.resolve(null),
+    photoUrls[2] ? imgToB64(photoUrls[2]) : Promise.resolve(null),
+  ]);
+
+  // ── PptxGenJS 생성 ──
   const pres = new PptxGenJS();
-  // 기본 레이아웃 10" × 7.5"
+  pres.layout = 'LAYOUT_WIDE'; // 13.33" × 7.5"
+  const W = 13.33, H = 7.5;
+  const SPLIT = 5.9; // 사진/정보 경계
   const slide = pres.addSlide();
-  const W = 10;
 
-  // ── 색상 팔레트 ──
-  const C_DARK    = '1a1a2e';
-  const C_PRIMARY = '4361ee';
-  const C_WHITE   = 'FFFFFF';
-  const C_GRAY    = '64748b';
-  const C_LIGHT   = 'f1f5f9';
-  const C_BORDER  = 'e2e8f0';
-  const C_PRICE   = 'dc2626';
-  const C_RENT    = 'ef4444';
-  const C_JEONSE  = '2563eb';
-  const C_SALE    = '16a34a';
+  // 색상
+  const NAVY   = '1b3764';
+  const AMBER  = 'c9902a';
+  const WHITE  = 'FFFFFF';
+  const LGRAY  = 'f2f4f6';
+  const MGRAY  = 'e8eaed';
+  const DGRAY  = '6b7280';
+  const BDR    = 'd1d5db';
 
-  // ── 헤더 ──
-  slide.addShape(pres.ShapeType.rect, { x:0, y:0, w:W, h:1.3, fill:{color:C_DARK} });
-  slide.addText('고연부동산', {
-    x:0.4, y:0.1, w:6, h:0.7,
-    fontSize:34, bold:true, color:C_WHITE, fontFace:'Malgun Gothic'
+  // ══════════════════════════════════════════
+  // 왼쪽: 사진 영역
+  // ══════════════════════════════════════════
+  // 배경 (사진 없을 때)
+  slide.addShape(pres.ShapeType.rect, {x:0, y:0, w:SPLIT, h:H, fill:{color:'2d3748'}});
+  slide.addText('사진 없음', {x:0, y:3.4, w:SPLIT, h:0.6, fontSize:14, color:'718096', align:'center', fontFace:'Malgun Gothic'});
+
+  const topH = img2||img3 ? 4.75 : H;
+  const botH = H - topH - 0.06;
+
+  // 상단 사진 (대)
+  if (img1) {
+    slide.addImage({data:img1, x:0, y:0, w:SPLIT, h:topH, sizing:{type:'cover', w:SPLIT, h:topH}});
+  }
+  // 하단 사진 2장
+  if (img2 || img3) {
+    const botY = topH + 0.06;
+    const hw = (SPLIT - 0.04) / 2;
+    if (img2) slide.addImage({data:img2, x:0, y:botY, w:hw, h:botH, sizing:{type:'cover',w:hw,h:botH}});
+    if (img3) slide.addImage({data:img3, x:hw+0.04, y:botY, w:hw, h:botH, sizing:{type:'cover',w:hw,h:botH}});
+  }
+
+  // 가격 오버레이 (좌하단 박스)
+  const ov_h = 1.35, ov_w = 3.6;
+  slide.addShape(pres.ShapeType.rect, {
+    x:0, y:(img2||img3?topH-ov_h:H-ov_h), w:ov_w, h:ov_h,
+    fill:{color:NAVY, transparency:8}
   });
-  slide.addText('서울 동대문구 안암로 148  |  ☎ 02-963-XXXX', {
-    x:0.4, y:0.8, w:7, h:0.38,
-    fontSize:12, color:'94a3b8', fontFace:'Malgun Gothic'
+  const ov_y = (img2||img3?topH-ov_h:H-ov_h);
+  // 거래유형 + 보증금
+  const depositLine = p.dealType==='전세'
+    ? `보증 ${fmtMoney(p.deposit)}`
+    : `보증 ${fmtMoney(p.deposit)}`;
+  slide.addText([
+    {text:(p.dealType||'월세')+'  ', options:{color:AMBER, bold:true, fontSize:14}},
+    {text:depositLine, options:{color:WHITE, bold:true, fontSize:20}},
+  ], {x:0.2, y:ov_y+0.12, w:ov_w-0.25, h:0.55, fontFace:'Malgun Gothic'});
+  // 월세 + 관리비
+  if (p.dealType !== '전세') {
+    const sub = `월 ${fmtMoney(p.rent||0)}${p.maintenance?' · 관리비 '+fmtMoney(p.maintenance)+'만원':''}`;
+    slide.addText(sub, {x:0.2, y:ov_y+0.68, w:ov_w-0.25, h:0.38, fontSize:12, color:'d1d5db', fontFace:'Malgun Gothic'});
+  } else if (p.maintenance) {
+    slide.addText('관리비 '+fmtMoney(p.maintenance)+'만원', {x:0.2, y:ov_y+0.68, w:ov_w-0.25, h:0.38, fontSize:12, color:'d1d5db', fontFace:'Malgun Gothic'});
+  }
+
+  // ══════════════════════════════════════════
+  // 오른쪽: 정보 패널
+  // ══════════════════════════════════════════
+  slide.addShape(pres.ShapeType.rect, {x:SPLIT, y:0, w:W-SPLIT, h:H, fill:{color:WHITE}});
+  const RX = SPLIT + 0.38;
+  const RW = W - SPLIT - 0.55;
+
+  // ① 소제목 "고연부동산 매 물  브 리 핑"
+  slide.addText('고연부동산  매 물  브 리 핑', {
+    x:RX, y:0.22, w:RW, h:0.35,
+    fontSize:11, color:AMBER, bold:true, fontFace:'Malgun Gothic'
   });
 
-  // 거래유형 뱃지
-  const dealColor = p.dealType==='전세'?C_JEONSE:(p.dealType==='매매'?C_SALE:C_RENT);
-  slide.addText(p.dealType||'', {
-    x:8.1, y:0.3, w:1.5, h:0.55,
-    fontSize:18, bold:true, color:C_WHITE, align:'center',
-    fill:{color:dealColor}, fontFace:'Malgun Gothic'
+  // ② 메인 타이틀
+  const dongPart  = p.dong || '';
+  const bldPart   = p.buildingName || '';
+  const unitPart  = p.unit ? '  ·  ' + p.unit + '호' : '';
+  const titleStr  = ([dongPart, bldPart].filter(Boolean).join(' ') + unitPart) || p.address;
+  slide.addText(titleStr, {
+    x:RX, y:0.54, w:RW, h:0.82,
+    fontSize:26, bold:true, color:NAVY, fontFace:'Malgun Gothic', charSpacing:0.5
   });
 
-  // ── 주소 ──
-  const addrFull = p.address + (p.unit ? ' ' + p.unit + '호' : '') + (p.buildingName ? '  (' + p.buildingName + ')' : '');
-  slide.addText(addrFull, {
-    x:0.4, y:1.45, w:9.2, h:0.7,
-    fontSize:21, bold:true, color:'1e293b', fontFace:'Malgun Gothic'
+  // ③ 주소
+  slide.addText(p.address + (p.unit ? ' ' + p.unit + '호' : ''), {
+    x:RX, y:1.36, w:RW, h:0.34,
+    fontSize:11.5, color:DGRAY, fontFace:'Malgun Gothic'
   });
 
-  // ── 가격 박스 ──
-  const priceStr = p.dealType==='전세'
-    ? '전세  ' + fmtMoney(p.deposit) + '만원'
-    : '보증금 ' + fmtMoney(p.deposit) + '만  /  월세 ' + fmtMoney(p.rent) + '만'
-      + (p.maintenance ? '  /  관리비 ' + fmtMoney(p.maintenance) + '만' : '');
-  slide.addShape(pres.ShapeType.rect, { x:0.4, y:2.3, w:9.2, h:0.85, fill:{color:'fef2f2'}, line:{color:'fca5a5',pt:1} });
-  slide.addText(priceStr, {
-    x:0.4, y:2.3, w:9.2, h:0.85,
-    fontSize:20, bold:true, color:C_PRICE, align:'center', fontFace:'Malgun Gothic'
+  // ④ 가격 박스 (네이비 배경)
+  const PBX = 1.78, PBH = 1.08;
+  slide.addShape(pres.ShapeType.rect, {x:RX, y:PBX, w:RW, h:PBH, fill:{color:NAVY}});
+  // 거래유형 + 가격 메인
+  const priceMain = p.dealType==='전세'
+    ? `보증금 ${fmtMoney(p.deposit)}만원`
+    : `보증금 ${fmtMoney(p.deposit)}  ·  월세 ${fmtMoney(p.rent)}`;
+  slide.addText([
+    {text:(p.dealType||'월세')+'  ', options:{color:AMBER, bold:true, fontSize:15}},
+    {text:priceMain, options:{color:WHITE, bold:true, fontSize:22}},
+  ], {x:RX+0.22, y:PBX+0.1, w:RW-0.3, h:0.58, fontFace:'Malgun Gothic'});
+  // 관리비 + 입주
+  const priceSub = [
+    p.maintenance ? '관리비 '+fmtMoney(p.maintenance)+'만원' : '',
+    '입주 협의'
+  ].filter(Boolean).join('      ');
+  slide.addText(priceSub, {
+    x:RX+0.22, y:PBX+0.68, w:RW-0.3, h:0.32,
+    fontSize:11.5, color:'8fafc8', fontFace:'Malgun Gothic'
   });
 
-  // ── 물건 정보 테이블 헤더 ──
-  slide.addShape(pres.ShapeType.rect, { x:0.4, y:3.3, w:9.2, h:0.38, fill:{color:C_BORDER} });
-  slide.addText('물건 정보', {
-    x:0.55, y:3.32, w:9, h:0.34,
-    fontSize:12, bold:true, color:'374151', fontFace:'Malgun Gothic'
-  });
-
-  // 정보 항목 (3열 2행)
-  const floorStr = p.floorCur ? (p.floorCur + '층' + (p.floorTotal ? ' / 총 ' + p.floorTotal + '층' : '')) : (p.floor || '-');
-  const infoRows = [
-    ['건물유형', p.buildingType||'-'],
-    ['전용면적',  p.area ? p.area + '㎡' : '-'],
-    ['층수',     floorStr],
-    ['방향',     p.direction||'-'],
-    ['주차',     p.parking||'-'],
-    ['입주가능일', p.moveIn||'-'],
+  // ⑤ 정보 그리드 (3행 × 2열)
+  const floorStr = p.floorCur
+    ? (p.floorCur+'층 / '+(p.floorTotal?'지상'+p.floorTotal+'층':''))
+    : (p.floor||'현장확인');
+  const infoGrid = [
+    ['전용면적', p.area?p.area+'㎡':'현장확인',  '층 / 총층',  floorStr],
+    ['방 / 욕실', p.roomType||'원룸 / 1',         '건물유형',  p.buildingType||'현장확인'],
+    ['주차',     p.parking||'현장확인',            '방향',      p.direction||'현장확인'],
   ];
-  infoRows.forEach((item, i) => {
-    const col = i % 3;
-    const row = Math.floor(i / 3);
-    const x = 0.4 + col * 3.07;
-    const y = 3.78 + row * 0.58;
-    const bg = (row % 2 === 0) ? 'ffffff' : 'f8fafc';
-    slide.addShape(pres.ShapeType.rect, { x:x, y:y, w:3.07, h:0.53, fill:{color:bg} });
-    slide.addText(item[0], { x:x+0.1, y:y+0.04, w:1.1, h:0.45, fontSize:10, color:C_GRAY, fontFace:'Malgun Gothic' });
-    slide.addText(item[1], { x:x+1.1, y:y+0.04, w:1.87, h:0.45, fontSize:12, bold:true, color:'1e293b', fontFace:'Malgun Gothic' });
+  const GY = PBX + PBH + 0.12;
+  const ROW_H = 0.62;
+  const CW = RW / 2 - 0.04;
+  infoGrid.forEach((row, ri) => {
+    const y = GY + ri * ROW_H;
+    const bg = ri%2===0 ? WHITE : LGRAY;
+    // 왼쪽
+    slide.addShape(pres.ShapeType.rect, {x:RX, y, w:CW, h:ROW_H, fill:{color:bg}, line:{color:BDR,pt:0.5}});
+    slide.addText(row[0], {x:RX+0.12, y:y+0.05, w:CW-0.2, h:0.22, fontSize:9, color:DGRAY, fontFace:'Malgun Gothic'});
+    slide.addText(row[1], {x:RX+0.12, y:y+0.27, w:CW-0.2, h:0.3,  fontSize:14, bold:true, color:NAVY, fontFace:'Malgun Gothic'});
+    // 오른쪽
+    const rx2 = RX+CW+0.08;
+    slide.addShape(pres.ShapeType.rect, {x:rx2, y, w:CW, h:ROW_H, fill:{color:bg}, line:{color:BDR,pt:0.5}});
+    slide.addText(row[2], {x:rx2+0.12, y:y+0.05, w:CW-0.2, h:0.22, fontSize:9, color:DGRAY, fontFace:'Malgun Gothic'});
+    slide.addText(row[3], {x:rx2+0.12, y:y+0.27, w:CW-0.2, h:0.3,  fontSize:14, bold:true, color:NAVY, fontFace:'Malgun Gothic'});
   });
 
-  // ── 옵션 ──
-  if (p.option) {
-    slide.addShape(pres.ShapeType.rect, { x:0.4, y:5.05, w:9.2, h:0.42, fill:{color:'eff6ff'}, line:{color:'bfdbfe',pt:1} });
-    slide.addText('✔ 옵션   ' + p.option, {
-      x:0.55, y:5.07, w:9, h:0.38,
-      fontSize:12, color:'1d4ed8', fontFace:'Malgun Gothic'
-    });
+  // ⑥ 옵션
+  const optY = GY + 3*ROW_H + 0.14;
+  slide.addText('옵션', {x:RX, y:optY, w:1.2, h:0.3, fontSize:12, bold:true, color:AMBER, fontFace:'Malgun Gothic'});
+  slide.addShape(pres.ShapeType.rect, {x:RX, y:optY+0.3, w:RW, h:0.42, fill:{color:LGRAY}});
+  slide.addText(p.option||'-', {
+    x:RX+0.14, y:optY+0.32, w:RW-0.22, h:0.38,
+    fontSize:12, color:'374151', fontFace:'Malgun Gothic'
+  });
+
+  // ⑦ 교통/메모
+  const infoY = optY + 0.82;
+  const infoText = p.transport || p.memo || '';
+  if (infoText) {
+    slide.addText([
+      {text:'교통  ', options:{color:AMBER, bold:true}},
+      {text:infoText, options:{color:'374151'}},
+    ], {x:RX, y:infoY, w:RW, h:0.38, fontSize:12, fontFace:'Malgun Gothic'});
   }
 
-  // ── 메모 ──
-  if (p.memo) {
-    slide.addText('※ ' + p.memo, {
-      x:0.4, y:5.58, w:9.2, h:0.45,
-      fontSize:11, color:C_GRAY, fontFace:'Malgun Gothic', italic:true
-    });
+  // ⑧ 특이사항 박스 (메모가 따로 있으면)
+  if (p.memo && infoText !== p.memo) {
+    const noteY = infoY + (infoText ? 0.44 : 0);
+    slide.addShape(pres.ShapeType.rect, {x:RX, y:noteY, w:RW, h:0.42, fill:{color:'fefce8'}, line:{color:'fbbf24',pt:1}});
+    slide.addText('※ '+p.memo, {x:RX+0.12, y:noteY+0.06, w:RW-0.2, h:0.34, fontSize:11, color:'78350f', fontFace:'Malgun Gothic'});
   }
 
-  // ── 푸터 ──
-  slide.addShape(pres.ShapeType.rect, { x:0, y:6.9, w:W, h:0.6, fill:{color:C_DARK} });
-  slide.addText(
-    '고연부동산  ·  서울 동대문구 안암로 148  ·  ☎ 02-963-XXXX  ·  본 자료는 참고용이며 실제 조건과 다를 수 있습니다.',
-    {
-      x:0.2, y:6.95, w:9.6, h:0.5,
-      fontSize:10, color:'94a3b8', align:'center', fontFace:'Malgun Gothic'
-    }
-  );
+  // ⑨ 푸터
+  slide.addText('고연부동산  ·  TEL 02-921-8722  ·  서울 동대문구 안암로 148', {
+    x:RX, y:H-0.42, w:RW, h:0.35,
+    fontSize:11, bold:true, color:NAVY, fontFace:'Malgun Gothic'
+  });
 
-  // 파일명에 특수문자 제거
-  const safeName = (p.address||'매물').replace(/[<>:"/\\|?*]/g,'_');
-  pres.writeFile({ fileName: `고연부동산_${safeName}_${p.dealType||''}.pptx` });
-  showToast('📄 고객용 자료가 다운로드됩니다!');
+  const safeName = (titleStr || p.address || '매물').replace(/[<>:"/\\|?*]/g,'_').slice(0,30);
+  await pres.writeFile({fileName:`고연부동산_브리핑_${safeName}.pptx`});
+  showToast('📄 브리핑 자료 다운로드 완료!');
 }
 
-
-function deleteProperty(id) {
-  const p=loadProperties().find(x=>x.id===id);
-  document.getElementById('confirmTitle').textContent='매물을 삭제하시겠습니까?';
-  document.getElementById('confirmMsg').textContent=`${p?.address||id} — 이 작업은 되돌릴 수 없습니다.`;
-  document.getElementById('confirmBtn').onclick=async()=>{
-    const props=loadProperties().filter(x=>x.id!==id);
-    saveProperties(props);
-    closeModal('confirmModal');
-    renderPropertyTable();
-    updateCount();
-    if(SheetAPI.isConfigured()){
-      setSyncStatus('syncing');
-      try{await SheetAPI.post('deleteProperty',{id});setSyncStatus('synced');showToast('삭제 완료 ✔ 시트 반영됨');}
-      catch(e){setSyncStatus('error');showToast('로컬 삭제됨 (시트 동기화 실패)','warning');}
-    } else {showToast('매물이 삭제되었습니다.');}
-  };
-  document.getElementById('confirmModal').classList.add('open');
-}
 
 // ============================================================
 // LANDLORDS
