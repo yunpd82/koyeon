@@ -2738,8 +2738,18 @@ function exportData() {
   a.href = URL.createObjectURL(blob);
   a.download = `고연부동산_백업_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
+  localStorage.setItem('koyeon_last_backup', Date.now().toString());
   showToast('백업 파일이 다운로드되었습니다.', 'success');
 }
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = handleImport;
+  input.click();
+}
+
 
 function handleImport(event) {
   const file = event.target.files[0]; if (!file) return;
@@ -4980,6 +4990,14 @@ function backToLedgerList() {
   renderDashboard();
   initFilterChips();
   await syncFromSheets();
+  // 마지막 백업 경고 (7일 이상 미백업 시)
+  const lastBackup = localStorage.getItem('koyeon_last_backup');
+  if (!lastBackup) {
+    setTimeout(() => showToast('⚠️ 데이터 백업이 없습니다! 우상단 💾 백업 버튼을 눌러 저장하세요.', 'warning'), 3000);
+  } else {
+    const days = Math.floor((Date.now() - parseInt(lastBackup)) / 86400000);
+    if (days >= 7) setTimeout(() => showToast(`⚠️ 마지막 백업 ${days}일 전 — 💾 백업을 눌러 저장하세요.`, 'warning'), 3000);
+  }
 })();
 </script>
 
