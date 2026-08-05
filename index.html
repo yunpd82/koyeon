@@ -2629,7 +2629,16 @@ async function syncFromSheets() {
   setSyncStatus('syncing');
   try {
     const r = await SheetAPI.getAll();
-    if (r.properties && r.properties.length > 0) saveProperties(r.properties);
+    // 시트 매물이 로컬보다 적으면 덮어쓰지 않음 (데이터 손실 방지)
+    if (r.properties && r.properties.length > 0) {
+      const localCount = loadProperties().length;
+      if (r.properties.length >= localCount) {
+        saveProperties(r.properties);
+      } else {
+        showToast(`⚠️ 시트 매물(${r.properties.length}건) < 로컬(${localCount}건) — 덮어쓰기 건너뜀`, 'warning');
+        console.warn('syncFromSheets: 시트 데이터가 로컬보다 적어 건너뜀', r.properties.length, localCount);
+      }
+    }
     if (r.landlords  && r.landlords.length  > 0) saveLandlords(r.landlords);
     if (r.customers  && r.customers.length  > 0) saveCustomers(r.customers);
     if (r.requests   && r.requests.length   > 0) saveRequests(r.requests);
