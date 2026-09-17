@@ -567,6 +567,7 @@
                 <span class="chip" data-val="쓰리룸">쓰리룸</span>
                 <span class="chip" data-val="빌라">빌라</span>
                 <span class="chip" data-val="다가구">다가구</span>
+                <span class="chip" data-val="상가">상가</span>
                 <span class="chip" data-val="단독주택">단독주택</span>
                 <span class="chip" data-val="기타">기타</span>
               </div>
@@ -708,7 +709,7 @@
           </select>
           <select class="filter" id="requestTypeFilter" onchange="renderRequestTable()">
             <option value="">전체 유형</option>
-            <option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>단독</option><option>기타</option>
+            <option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>상가</option><option>단독</option><option>기타</option>
           </select>
           <button class="btn btn-primary" onclick="openRequestModal()">+ 의뢰 등록</button>
         </div>
@@ -807,7 +808,7 @@
           </select>
           <select class="filter" id="mapTypeFilter" onchange="renderMapPins()">
             <option value="">전체 유형</option>
-            <option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>단독</option><option>기타</option>
+            <option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>상가</option><option>단독</option><option>기타</option>
           </select>
           <button class="btn btn-secondary btn-sm" onclick="renderMapPins()">🔄 핀 새로고침</button>
           <button class="btn btn-secondary btn-sm map-cache-btn" onclick="localStorage.removeItem('koyeon_geocache_v1');renderMapPins();showToast('주소 캐시 초기화됨')">🗑 캐시</button>
@@ -961,7 +962,7 @@
         <div class="form-section-title">건물 정보</div>
         <div class="form-grid col3">
           <div class="form-group"><label>건물 유형</label>
-            <select id="p_type" class="form-control"><option value="">선택</option><option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>단독</option><option>기타</option></select>
+            <select id="p_type" class="form-control"><option value="">선택</option><option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>상가</option><option>단독</option><option>기타</option></select>
           </div>
           <div class="form-group"><label>전용면적(㎡)</label><input type="number" id="p_area" class="form-control" placeholder="예: 23.5" step="0.1"></div>
           <div class="form-group"><label>현재층수</label><input type="number" id="p_floorCur" class="form-control" placeholder="예: 3" min="0" style="width:100%"></div>
@@ -1164,7 +1165,7 @@
         <div class="form-section-title">희망 조건</div>
         <div class="form-grid col3">
           <div class="form-group"><label>매물 유형</label>
-            <select id="req_type" class="form-control"><option value="">선택</option><option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>단독</option><option>기타</option></select>
+            <select id="req_type" class="form-control"><option value="">선택</option><option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>상가</option><option>단독</option><option>기타</option></select>
           </div>
           <div class="form-group"><label>거래 유형</label>
             <select id="req_dealType" class="form-control"><option value="">선택</option><option>전세</option><option>월세</option><option>반전세</option><option>매매</option></select>
@@ -1678,7 +1679,7 @@
               </div>
               <div class="form-group"><label>희망 유형</label>
                 <select class="form-control" id="cust_buildingType">
-                  <option value="">선택</option><option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>단독</option><option>아파트</option>
+                  <option value="">선택</option><option>오피스텔</option><option>원룸</option><option>투룸</option><option>쓰리룸</option><option>빌라</option><option>다가구</option><option>상가</option><option>단독</option><option>아파트</option>
                 </select>
               </div>
               <div class="form-group"><label>희망 지역 (구/동)</label><input class="form-control" id="cust_region" placeholder="예: 동대문구 제기동"></div>
