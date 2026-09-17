@@ -2247,7 +2247,7 @@ function viewProperty(id) {
       <div class="detail-item"><label>사진촬영</label><span>${p.photo==='Y'?'✅ 완료':'⬜ 미완료'}</span></div>
       <div class="detail-item"><label>광고채널</label><span>${p.adChannel||'-'}</span></div>
       <div class="detail-item"><label>네이버 매물번호</label><span>${p.naverNo?`<a href="https://m.land.naver.com/article/info/${p.naverNo}" target="_blank" style="color:var(--primary)">${p.naverNo} ↗</a>`:'-'}</span></div>
-      <div class="detail-item full"><label>📸 사진 링크</label><span>${(()=>{if(!p.photoLink)return '-';let urls=[];try{urls=JSON.parse(p.photoLink);}catch(e){urls=[p.photoLink];}if(!Array.isArray(urls))urls=[urls];return urls.map((u,i)=>'<a href="'+u+'" target="_blank" style="color:var(--primary);text-decoration:none">📸 사진'+(urls.length>1?' '+(i+1):'')+' </a>').join('');})()}</span></div>
+      <div class="detail-item full"><label>📸 사진</label><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${(()=>{if(!p.photoLink)return '<span style="color:var(--text-sm)">-</span>';let urls=[];try{urls=JSON.parse(p.photoLink);}catch(e){urls=[p.photoLink];}if(!Array.isArray(urls))urls=[urls];urls=urls.filter(Boolean);if(!urls.length)return '<span style="color:var(--text-sm)">-</span>';return urls.map((u,i)=>'<img src="'+u+'" style="width:110px;height:88px;object-fit:cover;border-radius:7px;cursor:zoom-in;border:1px solid var(--border)" onclick="openLightbox(\''+u+'\')" loading="lazy" onerror="this.style.display=\'none\'" title="사진 '+(i+1)+'">').join('');})()}</div></div>
       <div class="detail-item full"><label>비고/메모</label><span style="white-space:pre-wrap">${p.memo||'-'}</span></div>
       ${loadPrivateMemo(p.id) ? `<div class="detail-item full" style="background:#2c2c0a;border:1px solid #4a4a1a;border-radius:8px;padding:10px;margin-top:8px">
         <label style="color:#ffd60a">🔒 비공개 메모</label>
@@ -4618,7 +4618,7 @@ function viewPhotos(propId) {
   if (!Array.isArray(urls)) urls = [urls];
   urls = urls.filter(Boolean);
   if (!urls.length) return;
-  if (urls.length === 1) { window.open(urls[0], '_blank'); return; }
+  if (urls.length === 1) { openLightbox(urls[0]); return; }
   // 여러 장 → 라이트박스 갤러리
   const lb = document.getElementById('photoLightbox');
   const img = document.getElementById('lightboxImg');
