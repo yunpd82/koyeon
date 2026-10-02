@@ -181,6 +181,23 @@
   .setup-banner p{font-size:13px}
   .setup-banner strong{font-weight:700}
 
+  /* Nav group labels */
+  .nav-group-label{padding:14px 18px 4px;font-size:10px;font-weight:700;letter-spacing:.08em;color:#64748b;text-transform:uppercase;user-select:none}
+  /* Imjang page */
+  .imjang-card{background:var(--card);border:var(--hairline);border-radius:12px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:box-shadow .15s,background .1s}
+  .imjang-card:hover{box-shadow:var(--shadow-md);background:#f8faff}
+  .imjang-tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px;background:#e0e7ff;color:#3730a3;margin-left:4px}
+  .imjang-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+  .imjang-tab{padding:8px 18px;font-size:13px;font-weight:600;color:var(--text-sm);cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+  .imjang-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+  /* 건축물대장/등기부 강화 카드 */
+  .pub-doc-section{background:var(--card);border-radius:14px;padding:18px 20px;margin-bottom:16px;border:1px solid var(--border)}
+  .pub-doc-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .pub-doc-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .pub-doc-history{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+  .pub-doc-chip{font-size:11px;background:#f1f5f9;border:1px solid #cbd5e1;padding:3px 9px;border-radius:20px;cursor:pointer;color:var(--text);transition:.1s}
+  .pub-doc-chip:hover{background:#e0e7ff;border-color:#818cf8}
+
   @media(max-width:900px){
     .stats-grid{grid-template-columns:repeat(2,1fr)}
     .dash-row{grid-template-columns:1fr}
@@ -409,6 +426,7 @@
       </button>
     </div>
     <div class="sidebar-nav">
+      <div class="nav-group-label">중개 업무</div>
       <div class="nav-item active" onclick="showPage('dashboard')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         대시보드
@@ -425,6 +443,7 @@
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         매물 지도
       </div>
+      <div class="nav-group-label">영업 관리</div>
       <div class="nav-item" onclick="showPage('schedule')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         일정관리
@@ -437,10 +456,6 @@
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         의뢰관리
       </div>
-      <div class="nav-item" onclick="showPage('records')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-        공부열람
-      </div>
       <div class="nav-item" onclick="showPage('customers')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
         고객관리
@@ -449,6 +464,16 @@
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         자동매칭
       </div>
+      <div class="nav-group-label">공부 · 임장</div>
+      <div class="nav-item" onclick="showPage('records')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        공부열람
+      </div>
+      <div class="nav-item" onclick="showPage('imjang')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        임장 관리
+      </div>
+      <div class="nav-group-label">정산 · 기타</div>
       <div class="nav-item" onclick="showPage('calculator')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>
         부동산 계산기
@@ -729,22 +754,52 @@
 
     <!-- PUBLIC RECORDS PAGE -->
     <div id="page-records" class="page">
-      <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamburger" onclick="toggleSidebar()" title="메뉴"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><h2>📚 공부열람 바로가기</h2></div></div>
+      <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamburger" onclick="toggleSidebar()" title="메뉴"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><h2>📚 공부열람</h2></div></div>
       <div class="content">
-        <div style="background:#eff6ff;border:1px solid var(--primary);border-radius:8px;padding:12px 16px;margin-bottom:20px">
-          <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#1e40af">주소 입력 후 바로가기 클릭 (주소가 있으면 해당 페이지로 바로 이동합니다)</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="text" id="recordAddrInput" class="form-control" placeholder="예: 서울 동대문구 안암로 148" style="max-width:420px">
-            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('recordAddrInput').value=''">지우기</button>
+
+        <!-- 건축물대장 발급 -->
+        <div class="pub-doc-section">
+          <div class="pub-doc-header">
+            <div class="pub-doc-icon" style="background:#eff6ff">🏛️</div>
+            <div>
+              <div style="font-size:15px;font-weight:700">건축물대장 발급</div>
+              <div style="font-size:12px;color:var(--text-sm);margin-top:2px">건축물 기본현황·소유자·위반건축물 여부 확인 — cloud.eais.go.kr</div>
+            </div>
           </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="eaisAddrInput" class="form-control" placeholder="예: 서울 동대문구 안암로 148" style="max-width:400px" onkeydown="if(event.key==='Enter')openDocSite('eais')">
+            <button class="btn btn-primary btn-sm" onclick="openDocSite('eais')">🏛️ 건축물대장 열람</button>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('eaisAddrInput').value=''">지우기</button>
+          </div>
+          <div class="pub-doc-history" id="eaisHistory"></div>
+          <div style="font-size:11px;color:var(--text-sm);margin-top:8px">💡 사이트 이동 후 <b>건축물대장 열람</b> 메뉴에서 Ctrl+V로 주소를 붙여넣으세요.</div>
+        </div>
+
+        <!-- 등기부 발급 -->
+        <div class="pub-doc-section">
+          <div class="pub-doc-header">
+            <div class="pub-doc-icon" style="background:#fef9c3">📜</div>
+            <div>
+              <div style="font-size:15px;font-weight:700">등기부등본 발급</div>
+              <div style="font-size:12px;color:var(--text-sm);margin-top:2px">소유권·근저당·전세권 등 권리관계 확인 — iros.go.kr</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="irosAddrInput" class="form-control" placeholder="예: 서울 동대문구 안암로 148" style="max-width:400px" onkeydown="if(event.key==='Enter')openDocSite('iros')">
+            <button class="btn btn-primary btn-sm" onclick="openDocSite('iros')" style="background:#d97706;border-color:#d97706">📜 등기부 열람</button>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('irosAddrInput').value=''">지우기</button>
+          </div>
+          <div class="pub-doc-history" id="irosHistory"></div>
+          <div style="font-size:11px;color:var(--text-sm);margin-top:8px">💡 사이트 이동 후 <b>부동산 구분 → 집합건물/토지건물 → 주소 검색</b>으로 조회하세요.</div>
+        </div>
+
+        <!-- 기타 바로가기 -->
+        <div style="font-size:12px;font-weight:700;color:var(--text-sm);margin-bottom:10px;letter-spacing:.03em">기타 공공 바로가기</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+          <input type="text" id="recordAddrInput" class="form-control" placeholder="주소 입력 (선택)" style="max-width:320px">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('recordAddrInput').value=''">지우기</button>
         </div>
         <div class="records-grid">
-          <div class="record-card" onclick="openRecord('eais')">
-            <div class="r-icon">🏛️</div>
-            <div class="r-title">건축물대장</div>
-            <div class="r-desc">건축물 기본현황, 소유자, 위반건축물 여부 확인</div>
-            <div class="r-link">cloud.eais.go.kr →</div>
-          </div>
           <div class="record-card" onclick="openRecord('eum')">
             <div class="r-icon">🗺️</div>
             <div class="r-title">토지정보 (토지이음)</div>
@@ -756,12 +811,6 @@
             <div class="r-title">개별공시지가</div>
             <div class="r-desc">개별공시지가 및 표준지공시지가 조회</div>
             <div class="r-link">realtyprice.kr →</div>
-          </div>
-          <div class="record-card" onclick="openRecord('iros')">
-            <div class="r-icon">📜</div>
-            <div class="r-title">인터넷 등기소</div>
-            <div class="r-desc">등기부등본 발급, 소유권·담보 확인</div>
-            <div class="r-link">iros.go.kr →</div>
           </div>
           <div class="record-card" onclick="openRecord('rtms')">
             <div class="r-icon">📊</div>
@@ -793,6 +842,79 @@
             <div class="r-desc">재산세, 취득세 등 지방세 납부 및 조회</div>
             <div class="r-link">wetax.go.kr →</div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMJANG PAGE -->
+    <div id="page-imjang" class="page">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:10px"><button class="hamburger" onclick="toggleSidebar()" title="메뉴"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><h2>📍 임장 관리</h2></div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" onclick="openImjangModal(null)">+ 임장 기록 추가</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="imjang-tabs">
+          <div class="imjang-tab active" id="ijTab-list" onclick="switchImjangTab('list')">📋 기록 목록</div>
+          <div class="imjang-tab" id="ijTab-map" onclick="switchImjangTab('map')">🗺️ 임장 지도</div>
+        </div>
+        <!-- 기록 목록 -->
+        <div id="ijView-list">
+          <div id="imjangList" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <!-- 임장 지도 -->
+        <div id="ijView-map" style="display:none">
+          <div id="imjangMapSetupMsg" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 180px);gap:14px;color:var(--text-sm)">
+            <div style="font-size:48px">🗺</div>
+            <p style="font-size:16px;font-weight:600;color:var(--text)">카카오 API 키가 설정되지 않았습니다.</p>
+            <button class="btn btn-primary" onclick="openSettings()">설정하러 가기</button>
+          </div>
+          <div id="imjangMapContainer" style="height:calc(100vh - 180px)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMJANG MODAL -->
+    <div class="modal-overlay" id="imjangModal">
+      <div class="modal" style="max-width:520px">
+        <div class="modal-header">
+          <h3 id="imjangModalTitle">임장 기록 추가</h3>
+          <button class="modal-close" onclick="closeModal('imjangModal')">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="ij-id">
+          <div class="form-group"><label>주소 *</label><input type="text" id="ij-addr" class="form-control" placeholder="예: 서울 동대문구 안암로 148"></div>
+          <div class="form-grid">
+            <div class="form-group"><label>임장일 *</label><input type="date" id="ij-date" class="form-control"></div>
+            <div class="form-group"><label>유형</label>
+              <select id="ij-type" class="form-control">
+                <option value="전체">전체 임장</option>
+                <option value="외관">외관 확인</option>
+                <option value="내부">내부 확인</option>
+                <option value="주변">주변 환경</option>
+                <option value="재방문">재방문</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>매물 연결 (선택)</label>
+            <select id="ij-prop" class="form-control"></select>
+          </div>
+          <div class="form-group"><label>평점</label>
+            <select id="ij-rating" class="form-control">
+              <option value="">-</option>
+              <option value="5">⭐⭐⭐⭐⭐ 매우 좋음</option>
+              <option value="4">⭐⭐⭐⭐ 좋음</option>
+              <option value="3">⭐⭐⭐ 보통</option>
+              <option value="2">⭐⭐ 아쉬움</option>
+              <option value="1">⭐ 나쁨</option>
+            </select>
+          </div>
+          <div class="form-group"><label>메모</label><textarea id="ij-memo" class="form-control" rows="4" placeholder="임장 내용, 특이사항, 체크포인트 등 자유롭게 입력"></textarea></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal('imjangModal')">취소</button>
+          <button class="btn btn-primary" onclick="saveImjangRecord()">저장</button>
         </div>
       </div>
     </div>
@@ -1886,7 +2008,7 @@ function showPage(name) {
     if (mainEl) mainEl.scrollTop = 0;
     window.scrollTo(0, 0);
   });
-  const navMap = { dashboard:0, properties:1, landlords:2, map:3, schedule:4, calls:5, requests:6, records:7, customers:8, matching:9, calculator:10, ledger:11 };
+  const navMap = { dashboard:0, properties:1, landlords:2, map:3, schedule:4, calls:5, requests:6, customers:7, matching:8, records:9, imjang:10, calculator:11, ledger:12 };
   if (navMap[name] !== undefined) document.querySelectorAll('.nav-item')[navMap[name]].classList.add('active');
   if (name === 'dashboard')  renderDashboard();
   if (name === 'properties') renderPropertyTable();
@@ -1898,6 +2020,8 @@ function showPage(name) {
   if (name === 'customers')  renderCustomers();
   if (name === 'matching')   renderMatching();
   if (name === 'ledger')     renderLedger();
+  if (name === 'records')    renderRecordsPage();
+  if (name === 'imjang')     renderImjang();
 }
 
 // ============================================================
@@ -4051,34 +4175,6 @@ function deleteRequest(id) {
 }
 
 // ============================================================
-// PUBLIC RECORDS (공부열람 바로가기)
-// ============================================================
-function openRecord(type) {
-  const rawAddr = document.getElementById('recordAddrInput')?.value?.trim() || '';
-  const addr = encodeURIComponent(rawAddr);
-  const urls = {
-    eais:        'https://cloud.eais.go.kr',
-    eum:         `https://www.eum.go.kr/web/ar/lu/luLandDet.jsp${addr?'?addr='+addr:''}`,
-    realtyprice: 'https://www.realtyprice.kr',
-    iros:        'https://www.iros.go.kr',
-    rtms:        'https://rt.molit.go.kr',
-    naver:       `https://map.naver.com/v5/search/${addr||''}`,
-    kab:         'https://www.applyhome.co.kr',
-    hometax:     'https://www.hometax.go.kr',
-    wetax:       'https://www.wetax.go.kr'
-  };
-  const url = urls[type];
-  if (!url) return;
-  // 주소가 있으면 클립보드에 복사 후 사이트 열기
-  if (rawAddr) {
-    navigator.clipboard.writeText(rawAddr).then(() => {
-      showToast('주소가 복사됐습니다 — 사이트에서 Ctrl+V로 붙여넣으세요 📋', 'success');
-    }).catch(() => {});
-  }
-  window.open(url, '_blank');
-}
-
-// ============================================================
 // KAKAO MAP
 // ============================================================
 let _kakaoMapObj = null;
@@ -4381,6 +4477,192 @@ function openRecord(type) {
     }).catch(() => {});
   }
   window.open(url, '_blank');
+}
+
+// 건축물대장/등기부 전용 열기 + 주소 히스토리
+const PUB_DOC_HISTORY_KEY = 'koyeon_pubdoc_history_v1';
+function _getPubDocHistory() { try { return JSON.parse(localStorage.getItem(PUB_DOC_HISTORY_KEY)||'{}'); } catch { return {}; } }
+function _savePubDocHistory(h) { try { localStorage.setItem(PUB_DOC_HISTORY_KEY, JSON.stringify(h)); } catch {} }
+
+function openDocSite(type) {
+  const inputId = type === 'eais' ? 'eaisAddrInput' : 'irosAddrInput';
+  const rawAddr = document.getElementById(inputId)?.value?.trim() || '';
+  const url = type === 'eais' ? 'https://cloud.eais.go.kr' : 'https://www.iros.go.kr';
+  if (rawAddr) {
+    navigator.clipboard.writeText(rawAddr).then(() => {
+      showToast('주소 복사됨 — 사이트에서 Ctrl+V로 붙여넣으세요 📋', 'success');
+    }).catch(() => {});
+    // 히스토리 저장
+    const h = _getPubDocHistory();
+    if (!h[type]) h[type] = [];
+    h[type] = [rawAddr, ...h[type].filter(x=>x!==rawAddr)].slice(0, 8);
+    _savePubDocHistory(h);
+    renderPubDocHistory();
+  }
+  window.open(url, '_blank');
+}
+
+function renderRecordsPage() {
+  renderPubDocHistory();
+}
+
+function renderPubDocHistory() {
+  const h = _getPubDocHistory();
+  ['eais','iros'].forEach(type => {
+    const el = document.getElementById(type+'History');
+    if (!el) return;
+    const items = h[type] || [];
+    if (!items.length) { el.innerHTML = ''; return; }
+    const inputId = type === 'eais' ? 'eaisAddrInput' : 'irosAddrInput';
+    el.innerHTML = '<span style="font-size:11px;color:var(--text-sm);margin-right:4px">최근:</span>' +
+      items.map(addr => `<span class="pub-doc-chip" onclick="document.getElementById('${inputId}').value=this.textContent.trim()">${addr}</span>`).join('');
+  });
+}
+
+// ============================================================
+// 임장 관리
+// ============================================================
+const IMJANG_KEY = 'koyeon_imjang_v1';
+function loadImjang() { try { return JSON.parse(localStorage.getItem(IMJANG_KEY)||'[]'); } catch { return []; } }
+function saveImjangData(arr) { try { localStorage.setItem(IMJANG_KEY, JSON.stringify(arr)); } catch {} }
+
+function renderImjang() {
+  switchImjangTab('list');
+}
+
+function switchImjangTab(tab) {
+  document.getElementById('ijTab-list').classList.toggle('active', tab==='list');
+  document.getElementById('ijTab-map').classList.toggle('active', tab==='map');
+  document.getElementById('ijView-list').style.display = tab==='list' ? 'block' : 'none';
+  document.getElementById('ijView-map').style.display  = tab==='map'  ? 'block' : 'none';
+  if (tab==='list') renderImjangList();
+  if (tab==='map')  initImjangMap();
+}
+
+function renderImjangList() {
+  const list = loadImjang().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const el = document.getElementById('imjangList');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = '<div class="imjang-empty">📍 임장 기록이 없습니다.<br><br><button class="btn btn-primary btn-sm" onclick="openImjangModal(null)">+ 첫 임장 기록 추가</button></div>';
+    return;
+  }
+  const RATING_STARS = {5:'⭐⭐⭐⭐⭐',4:'⭐⭐⭐⭐',3:'⭐⭐⭐',2:'⭐⭐',1:'⭐'};
+  const TYPE_COLORS  = {'전체':'#3b82f6','외관':'#10b981','내부':'#8b5cf6','주변':'#f59e0b','재방문':'#ef4444'};
+  el.innerHTML = list.map(r => {
+    const clr = TYPE_COLORS[r.type] || '#64748b';
+    return `<div class="imjang-card">
+      <div style="width:4px;min-height:60px;border-radius:4px;background:${clr};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:14px;color:var(--text)">${r.addr||'(주소 없음)'}</span>
+          <span style="font-size:11px;background:${clr}22;color:${clr};padding:2px 7px;border-radius:20px;font-weight:600">${r.type||'전체'}</span>
+          ${r.rating ? `<span style="font-size:12px">${RATING_STARS[r.rating]||''}</span>` : ''}
+        </div>
+        <div style="font-size:12px;color:var(--text-sm);margin-bottom:4px">${r.date||''} ${r.propId?'· 매물 연결됨':''}</div>
+        ${r.memo ? `<div style="font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.5">${r.memo.substring(0,120)}${r.memo.length>120?'…':''}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm" onclick="openImjangModal('${r.id}')">수정</button>
+        <button class="btn btn-sm" style="background:var(--danger-light);color:var(--danger);border:none" onclick="deleteImjangRecord('${r.id}')">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openImjangModal(id) {
+  const r = id ? loadImjang().find(x=>x.id===id) : null;
+  document.getElementById('imjangModalTitle').textContent = r ? '임장 기록 수정' : '임장 기록 추가';
+  document.getElementById('ij-id').value   = r?.id || '';
+  document.getElementById('ij-addr').value = r?.addr || '';
+  document.getElementById('ij-date').value = r?.date || new Date().toISOString().slice(0,10);
+  document.getElementById('ij-type').value = r?.type || '전체';
+  document.getElementById('ij-rating').value = r?.rating || '';
+  document.getElementById('ij-memo').value = r?.memo || '';
+  // 매물 목록 채우기
+  const props = loadProperties();
+  document.getElementById('ij-prop').innerHTML = '<option value="">-- 연결 안 함 --</option>' +
+    props.map(p=>`<option value="${p.id}" ${r?.propId===p.id?'selected':''}>${p.address||p.id}</option>`).join('');
+  document.getElementById('imjangModal').classList.add('open');
+}
+
+function saveImjangRecord() {
+  const id    = document.getElementById('ij-id').value || ('ij_' + Date.now());
+  const addr  = document.getElementById('ij-addr').value.trim();
+  const date  = document.getElementById('ij-date').value;
+  if (!addr) { showToast('주소를 입력해주세요.','error'); return; }
+  if (!date) { showToast('임장일을 입력해주세요.','error'); return; }
+  const rec = {
+    id, addr, date,
+    type:   document.getElementById('ij-type').value,
+    propId: document.getElementById('ij-prop').value,
+    rating: document.getElementById('ij-rating').value,
+    memo:   document.getElementById('ij-memo').value.trim(),
+    updatedAt: new Date().toISOString()
+  };
+  const list = loadImjang().filter(x=>x.id!==id);
+  list.push(rec);
+  saveImjangData(list);
+  closeModal('imjangModal');
+  renderImjangList();
+  showToast('임장 기록이 저장됐습니다.');
+}
+
+function deleteImjangRecord(id) {
+  if (!confirm('이 임장 기록을 삭제하시겠습니까?')) return;
+  saveImjangData(loadImjang().filter(x=>x.id!==id));
+  renderImjangList();
+  showToast('삭제됐습니다.');
+}
+
+let _imjangMap = null;
+function initImjangMap() {
+  const cfg = loadConfig();
+  const apiKey = cfg.kakaoApiKey || '';
+  if (!apiKey) {
+    document.getElementById('imjangMapSetupMsg').style.display='flex';
+    document.getElementById('imjangMapContainer').style.display='none';
+    return;
+  }
+  document.getElementById('imjangMapSetupMsg').style.display='none';
+  document.getElementById('imjangMapContainer').style.display='block';
+  function _renderImjangPins() {
+    if (!window.kakao || !window.kakao.maps) return;
+    const container = document.getElementById('imjangMapContainer');
+    if (!_imjangMap) {
+      _imjangMap = new kakao.maps.Map(container, { center: new kakao.maps.LatLng(37.5879, 127.0284), level: 5 });
+    }
+    const list = loadImjang();
+    const TYPE_COLORS = {'전체':'#3b82f6','외관':'#10b981','내부':'#8b5cf6','주변':'#f59e0b','재방문':'#ef4444'};
+    const GEOCACHE_KEY = 'koyeon_geocache_v1';
+    let cache = {};
+    try { cache = JSON.parse(localStorage.getItem(GEOCACHE_KEY)||'{}'); } catch {}
+    const geocoder = new kakao.maps.services.Geocoder();
+    list.forEach(r => {
+      const clr = TYPE_COLORS[r.type] || '#3b82f6';
+      const svgContent = encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='28' height='36' viewBox='0 0 28 36'><path d='M14 0C6.27 0 0 6.27 0 14c0 9.33 14 22 14 22S28 23.33 28 14C28 6.27 21.73 0 14 0z' fill='${clr}'/><circle cx='14' cy='14' r='6' fill='white'/></svg>`);
+      const markerImg = new kakao.maps.MarkerImage('data:image/svg+xml;charset=UTF-8,'+svgContent, new kakao.maps.Size(28,36));
+      function _placeMarker(lat, lng) {
+        const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(lat,lng), map: _imjangMap, image: markerImg });
+        const iw = new kakao.maps.InfoWindow({ content: `<div style="padding:6px 10px;font-size:12px;font-weight:600;max-width:160px">${r.addr}<br><span style="font-size:11px;color:#64748b">${r.date||''} · ${r.type||''}</span></div>` });
+        kakao.maps.event.addListener(marker,'click',()=>iw.open(_imjangMap,marker));
+      }
+      if (cache[r.addr]) { _placeMarker(cache[r.addr][0], cache[r.addr][1]); return; }
+      geocoder.addressSearch(r.addr, (result, status) => {
+        if (status === kakao.maps.services.Status.OK) {
+          const lat = parseFloat(result[0].y), lng = parseFloat(result[0].x);
+          cache[r.addr] = [lat, lng];
+          try { localStorage.setItem(GEOCACHE_KEY, JSON.stringify(cache)); } catch {}
+          _placeMarker(lat, lng);
+        }
+      });
+    });
+  }
+  if (window.kakao && window.kakao.maps) { _renderImjangPins(); return; }
+  const script = document.createElement('script');
+  script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services&autoload=false`;
+  script.onload = () => kakao.maps.load(_renderImjangPins);
+  document.head.appendChild(script);
 }
 
 // ============================================================
