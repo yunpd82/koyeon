@@ -492,7 +492,12 @@
         <div class="sync-dot offline" id="syncDot"></div>
         <span class="sync-label" id="syncLabel">시트 미연결</span>
       </div>
-      <small id="dataCount" style="color:#475569;font-size:11px">매물 0건 · 임대인 0명</small>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px" title="구글 드라이브 자동 백업">
+        <span id="driveBackupDot" style="width:7px;height:7px;border-radius:50%;background:#475569;flex-shrink:0;display:inline-block"></span>
+        <span id="driveBackupLabel" style="font-size:11px;color:#475569">드라이브 백업 대기 중</span>
+        <button onclick="driveBackupNow()" style="margin-left:auto;background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:11px;color:#64748b" title="지금 백업">↑</button>
+      </div>
+      <small id="dataCount" style="color:#475569;font-size:11px;margin-top:4px;display:block">매물 0건 · 임대인 0명</small>
     </div>
   </nav>
 
@@ -2722,7 +2727,11 @@ async function saveSettings() {
   storeConfig({ apiUrl, secret, kakaoKey });
   closeModal('settingsModal');
   showToast('설정이 저장되었습니다.', 'success');
-  if (apiUrl) { await syncFromSheets(); }
+  if (apiUrl) {
+    await syncFromSheets();
+    _scheduleDriveBackup();
+    setTimeout(driveBackupNow, 5000); // 설정 직후 첫 백업
+  }
 }
 
 async function testConnection() {
@@ -2785,6 +2794,15 @@ async function syncFromSheets() {
     setSyncStatus('error', '동기화 실패');
     showToast('구글 시트 동기화 실패: ' + e.message, 'warning');
   }
+}
+
+async function manualSync() {
+  const btn = document.getElementById('syncBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '동기화 중...'; }
+  await syncFromSheets();
+  // 시트 동기화 완료 후 드라이브 백업도 실행
+  await driveBackupNow();
+  if (btn) { btn.disabled = false; btn.textContent = '🔄 시트 동기화'; }
 }
 
 // ============================================================
@@ -5346,6 +5364,75 @@ function backToLedgerList() {
 }
 
 // ============================================================
+// ============================================================
+// 구글 드라이브 자동 백업
+// ============================================================
+const DRIVE_BACKUP_TS_KEY = 'koyeon_drive_backup_ts';
+const DRIVE_BACKUP_INTERVAL = 30 * 60 * 1000; // 30분
+let _driveBackupTimer = null;
+
+function _setDriveStatus(state, msg) {
+  const dot   = document.getElementById('driveBackupDot');
+  const label = document.getElementById('driveBackupLabel');
+  if (!dot || !label) return;
+  const colors = { ok:'#10b981', syncing:'#f59e0b', error:'#ef4444', idle:'#475569' };
+  dot.style.background = colors[state] || colors.idle;
+  label.textContent = msg;
+}
+
+function _collectBackupPayload() {
+  const payload = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('koyeon_') && !key.includes('geocache')) {
+      try { payload[key] = JSON.parse(localStorage.getItem(key)); }
+      catch { payload[key] = localStorage.getItem(key); }
+    }
+  }
+  return payload;
+}
+
+async function driveBackupNow() {
+  if (!SheetAPI.isConfigured()) {
+    showToast('구글 시트 API URL이 설정되어야 드라이브 백업이 가능합니다.', 'warning');
+    return;
+  }
+  _setDriveStatus('syncing', '드라이브 백업 중...');
+  try {
+    const payload = _collectBackupPayload();
+    const r = await SheetAPI.post('backupToDrive', { payload });
+    if (r.ok) {
+      const ts = Date.now();
+      localStorage.setItem(DRIVE_BACKUP_TS_KEY, String(ts));
+      const d = new Date(ts);
+      const stamp = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      _setDriveStatus('ok', `드라이브 백업 완료 ${stamp}`);
+    } else {
+      throw new Error(r.error || '백업 실패');
+    }
+  } catch (e) {
+    _setDriveStatus('error', '드라이브 백업 오류');
+    console.warn('driveBackupNow error:', e);
+  }
+}
+
+function _scheduleDriveBackup() {
+  if (_driveBackupTimer) clearTimeout(_driveBackupTimer);
+  _driveBackupTimer = setTimeout(async () => {
+    await driveBackupNow();
+    _driveBackupTimer = setInterval(driveBackupNow, DRIVE_BACKUP_INTERVAL);
+  }, DRIVE_BACKUP_INTERVAL);
+}
+
+function _initDriveBackupStatus() {
+  const ts = parseInt(localStorage.getItem(DRIVE_BACKUP_TS_KEY) || '0');
+  if (!ts) { _setDriveStatus('idle', '드라이브 백업 대기 중'); return; }
+  const d = new Date(ts);
+  const stamp = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  _setDriveStatus('ok', `마지막 백업 ${stamp}`);
+}
+
+// ============================================================
 // INIT
 // ============================================================
 (async function init() {
@@ -5356,6 +5443,8 @@ function backToLedgerList() {
   renderDashboard();
   initFilterChips();
   await syncFromSheets();
+  _initDriveBackupStatus();
+  if (SheetAPI.isConfigured()) _scheduleDriveBackup();
   // 마지막 백업 경고 (7일 이상 미백업 시)
   const lastBackup = localStorage.getItem('koyeon_last_backup');
   if (!lastBackup) {
