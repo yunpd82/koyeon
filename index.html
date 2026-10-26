@@ -718,7 +718,6 @@
 </tr></thead>
               <tbody id="propertyTableBody"><tr><td colspan="14" class="no-data">등록된 매물이 없습니다.</td></tr></tbody>
             </table>
-          </div>
           </div><!-- /propertyTableContainer -->
           <div class="table-footer"><span id="tableCount">0건</span><span id="tableSummary"></span></div>
         </div>
@@ -3122,8 +3121,7 @@ async function manualSync() {
   const btn = document.getElementById('syncBtn');
   if (btn) { btn.disabled = true; btn.textContent = '동기화 중...'; }
   await syncFromSheets();
-  // 시트 동기화 완료 후 드라이브 백업도 실행
-  await driveBackupNow();
+  // 시트 동기화와 드라이브 백업은 분리 (백업은 ↑ 버튼 또는 자동 스케줄로만)
   if (btn) { btn.disabled = false; btn.textContent = '🔄 시트 동기화'; }
 }
 
@@ -5704,37 +5702,57 @@ function _setDriveStatus(state, msg) {
 
 function _collectBackupPayload() {
   const payload = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('koyeon_') && !key.includes('geocache')) {
-      try { payload[key] = JSON.parse(localStorage.getItem(key)); }
-      catch { payload[key] = localStorage.getItem(key); }
+  // 핵심 데이터만 백업 (사진 URL 제외로 용량 절감)
+  const keysToBackup = ['koyeon_properties_v1', 'koyeon_landlords_v1',
+    'koyeon_calls_v1', 'koyeon_requests_v1', 'koyeon_customers_v1',
+    'koyeon_schedules_v1', 'koyeon_matching_v1', 'koyeon_ledger_v1',
+    'koyeon_imjang_v1', 'koyeon_pubdoc_history_v1'];
+  keysToBackup.forEach(key => {
+    const val = localStorage.getItem(key);
+    if (val) {
+      try { payload[key] = JSON.parse(val); }
+      catch { payload[key] = val; }
     }
-  }
+  });
   return payload;
 }
 
 async function driveBackupNow() {
   if (!SheetAPI.isConfigured()) {
-    showToast('구글 시트 API URL이 설정되어야 드라이브 백업이 가능합니다.', 'warning');
+    _setDriveStatus('idle', 'API 미설정 — 백업 건너뜀');
     return;
   }
   _setDriveStatus('syncing', '드라이브 백업 중...');
   try {
     const payload = _collectBackupPayload();
+
+    // 용량 체크 (Apps Script 한도 ~50MB, 안전하게 2MB 제한)
+    const payloadStr = JSON.stringify(payload);
+    const sizeKB = Math.round(payloadStr.length / 1024);
+    if (payloadStr.length > 2 * 1024 * 1024) {
+      throw new Error(`백업 데이터 용량 초과 (${sizeKB}KB). 관리자 문의.`);
+    }
+
     const r = await SheetAPI.post('backupToDrive', { payload });
-    if (r.ok) {
+    if (r && r.ok) {
       const ts = Date.now();
       localStorage.setItem(DRIVE_BACKUP_TS_KEY, String(ts));
       const d = new Date(ts);
       const stamp = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-      _setDriveStatus('ok', `드라이브 백업 완료 ${stamp}`);
+      _setDriveStatus('ok', `백업완료 ${stamp} (${sizeKB}KB)`);
     } else {
-      throw new Error(r.error || '백업 실패');
+      const errMsg = (r && r.error) ? r.error : '서버 응답 없음';
+      // Apps Script 미배포 오류는 조용히 처리
+      if (errMsg.includes('알 수 없는 action') || errMsg.includes('unknown')) {
+        _setDriveStatus('idle', 'Apps Script 재배포 필요');
+        console.warn('[백업] Apps Script에 backupToDrive가 없습니다. 재배포하세요.');
+      } else {
+        throw new Error(errMsg);
+      }
     }
   } catch (e) {
-    _setDriveStatus('error', '드라이브 백업 오류');
-    console.warn('driveBackupNow error:', e);
+    _setDriveStatus('error', `백업오류: ${String(e.message||e).slice(0,30)}`);
+    console.warn('[driveBackupNow]', e);
   }
 }
 
