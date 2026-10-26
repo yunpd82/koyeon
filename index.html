@@ -78,6 +78,33 @@
   .region-table tr:last-child td{border-bottom:none}
   .table-container{background:var(--card);border-radius:18px;border:var(--hairline);overflow:hidden}
   .table-container table{min-width:600px}
+  /* ── 카드 뷰 ─────────────────────────────────────────── */
+  .prop-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px;padding:4px 0 8px}
+  .prop-card{background:var(--card);border:var(--hairline);border-radius:14px;overflow:hidden;display:flex;transition:box-shadow .15s,transform .1s;position:relative}
+  .prop-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.10);transform:translateY(-2px)}
+  .prop-card-thumb{width:120px;min-width:120px;background:#f1f5f9;position:relative;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .prop-card-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .prop-card-thumb .no-photo{font-size:32px;opacity:.3}
+  .prop-card-ribbon{position:absolute;top:10px;left:-20px;background:#16a34a;color:#fff;font-size:9px;font-weight:700;padding:3px 26px;transform:rotate(-45deg);letter-spacing:.05em;white-space:nowrap;z-index:1}
+  .prop-card-ribbon.new{background:#6366f1}
+  .prop-card-body{flex:1;padding:11px 13px;display:flex;flex-direction:column;gap:5px;min-width:0}
+  .prop-card-loc{font-size:11px;color:var(--text-sm);display:flex;align-items:center;justify-content:space-between;gap:4px}
+  .prop-card-addr{font-size:13px;font-weight:700;color:var(--text);line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prop-card-specs{font-size:11px;color:var(--text-sm);display:flex;gap:5px;flex-wrap:wrap;line-height:1.4}
+  .prop-card-specs .dot::before{content:'·';margin-right:4px;color:var(--border)}
+  .prop-card-price{display:flex;gap:6px;flex-wrap:wrap;align-items:baseline;margin-top:4px}
+  .pcbadge-dep{font-size:11px;background:#f1f5f9;border:1px solid #cbd5e1;padding:2px 8px;border-radius:20px;color:#475569;font-weight:600;white-space:nowrap}
+  .pcbadge-rent{font-size:14px;font-weight:800;color:var(--primary)}
+  .pcbadge-jeonse{font-size:14px;font-weight:800;color:#0891b2}
+  .pcbadge-sale{font-size:14px;font-weight:800;color:#dc2626}
+  .prop-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:6px;border-top:1px solid var(--border)}
+  .prop-card-actions{display:flex;gap:2px}
+  .prop-card-actions button{padding:3px 6px;font-size:11px;border:1px solid var(--border);border-radius:5px;background:none;cursor:pointer;color:var(--text-sm);transition:.1s}
+  .prop-card-actions button:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+  /* 뷰 토글 */
+  .view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0}
+  .view-toggle button{padding:5px 11px;background:var(--card);border:none;cursor:pointer;font-size:13px;transition:.1s;color:var(--text-sm)}
+  .view-toggle button.active{background:var(--primary);color:#fff}
   .table-toolbar{padding:14px 16px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);flex-wrap:wrap}
   .search-box{display:flex;align-items:center;gap:6px;background:var(--neutral-light);border:var(--hairline);border-radius:9999px;padding:6px 14px;flex:1;min-width:200px}
   .search-box input{border:none;background:transparent;outline:none;font-size:13px;width:100%}
@@ -586,6 +613,10 @@
     <!-- PROPERTIES -->
     <div id="page-properties" class="page">
       <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamburger" onclick="toggleSidebar()" title="메뉴"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><h2>🏠 매물 목록</h2></div><div class="topbar-actions">
+          <div class="view-toggle">
+            <button id="viewToggleTable" class="active" onclick="setPropViewMode('table')" title="테이블 뷰">☰ 목록</button>
+            <button id="viewToggleCard" onclick="setPropViewMode('card')" title="카드 뷰">▦ 카드</button>
+          </div>
           <button class="btn btn-secondary" onclick="exportPropertiesExcel()">📥 엑셀 저장</button>
           <button class="btn btn-secondary" onclick="document.getElementById('surveyFileInput').click()">📋 조사표 가져오기</button>
           <input type="file" id="surveyFileInput" accept=".xlsx" style="display:none" onchange="handleSurveyImport(event)">
@@ -661,7 +692,13 @@
 
             </div>
           </div>
-          <div style="overflow-x:auto">
+          <!-- 카드 뷰 (기본 숨김) -->
+          <div id="propertyCardContainer" style="display:none;padding:14px 16px">
+            <div class="prop-card-grid" id="propertyCardGrid"></div>
+            <div id="cardCount" style="padding:4px 0 8px;font-size:12px;color:var(--text-sm)"></div>
+          </div>
+          <!-- 테이블 뷰 -->
+          <div id="propertyTableContainer" style="overflow-x:auto">
             <table>
               <thead><tr>
   <th onclick="setPropSort('id')"       style="cursor:pointer;user-select:none" title="매물번호 정렬">매물번호<span id="sh_id"></span></th>
@@ -682,6 +719,7 @@
               <tbody id="propertyTableBody"><tr><td colspan="14" class="no-data">등록된 매물이 없습니다.</td></tr></tbody>
             </table>
           </div>
+          </div><!-- /propertyTableContainer -->
           <div class="table-footer"><span id="tableCount">0건</span><span id="tableSummary"></span></div>
         </div>
       </div>
@@ -2171,6 +2209,96 @@ function resetPropertyFilters() {
   renderPropertyTable();
 }
 
+// ── 뷰 모드 토글 ────────────────────────────────────────────
+let _propViewMode = localStorage.getItem('koyeon_propView') || 'table';
+
+function setPropViewMode(mode) {
+  _propViewMode = mode;
+  localStorage.setItem('koyeon_propView', mode);
+  document.getElementById('viewToggleTable').classList.toggle('active', mode==='table');
+  document.getElementById('viewToggleCard').classList.toggle('active', mode==='card');
+  document.getElementById('propertyTableContainer').style.display = mode==='table' ? '' : 'none';
+  document.getElementById('propertyCardContainer').style.display  = mode==='card'  ? '' : 'none';
+  renderPropertyTable();
+}
+
+// ── 카드 렌더링 ──────────────────────────────────────────────
+function renderPropCards(filtered) {
+  const grid = document.getElementById('propertyCardGrid');
+  const countEl = document.getElementById('cardCount');
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--text-sm)">
+      조건에 맞는 매물이 없습니다.<br>
+      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openPropertyModal()">+ 매물 등록하기</button>
+    </div>`;
+    countEl.textContent = '';
+    return;
+  }
+  grid.innerHTML = filtered.map(p => {
+    // 썸네일
+    let thumbUrl = '';
+    if (p.photoLink) {
+      try { const a=JSON.parse(p.photoLink); thumbUrl=Array.isArray(a)?a[0]||'':p.photoLink; }
+      catch(e) { thumbUrl=p.photoLink; }
+    }
+    const thumb = thumbUrl
+      ? `<img src="${thumbUrl}" loading="lazy" onerror="this.style.display='none'" onclick="viewPhotos('${p.id}')">`
+      : `<div class="no-photo">🏠</div>`;
+
+    // 리본 배지 (신규: 7일 이내)
+    let ribbon = '';
+    if (p.date) {
+      const daysAgo = (Date.now() - new Date(p.date).getTime()) / 86400000;
+      if (daysAgo <= 7) ribbon = `<div class="prop-card-ribbon new">NEW</div>`;
+    }
+    if (p.commission === '전속') ribbon = `<div class="prop-card-ribbon">전속</div>`;
+
+    // 가격 배지
+    let priceBadge = '';
+    if (p.dealType === '전세') {
+      priceBadge = `<span class="pcbadge-jeonse">전세 ${fmtMoney(p.deposit)}만</span>`;
+    } else if (p.dealType === '매매') {
+      priceBadge = `<span class="pcbadge-sale">매매 ${fmtMoney(p.deposit)}만</span>`;
+    } else {
+      const dep  = p.deposit ? `<span class="pcbadge-dep">보증 ${fmtMoney(p.deposit)}만</span>` : '';
+      const rent = p.rent    ? `<span class="pcbadge-rent">월 ${fmtMoney(p.rent)}만</span>` : '';
+      priceBadge = dep + rent;
+    }
+
+    // 스펙
+    const specs = [
+      p.buildingType,
+      p.area ? p.area+'㎡' : '',
+      p.floorCur ? p.floorCur+'층' : (p.floor ? p.floor+'층' : ''),
+      p.direction || ''
+    ].filter(Boolean);
+
+    const loc = [p.dong||p.region, p.buildingName].filter(Boolean).join(' · ');
+
+    return `<div class="prop-card" onclick="viewProperty('${p.id}')">
+      <div class="prop-card-thumb">${ribbon}${thumb}</div>
+      <div class="prop-card-body">
+        <div class="prop-card-loc">
+          <span>${loc||p.region||'-'}</span>
+          <span class="badge badge-${p.status}" style="font-size:10px;padding:1px 6px">${p.status}</span>
+        </div>
+        <div class="prop-card-addr" title="${p.address}${p.unit?' '+p.unit+'호':''}">${p.address}${p.unit?' <span style="color:var(--primary)">'+p.unit+'호</span>':''}</div>
+        <div class="prop-card-specs">${specs.map((s,i)=>i===0?s:`<span class="dot">${s}</span>`).join('')}</div>
+        <div class="prop-card-price">${priceBadge}</div>
+        <div class="prop-card-footer">
+          <span style="font-size:10px;color:var(--text-sm)">#${p.id}</span>
+          <div class="prop-card-actions" onclick="event.stopPropagation()">
+            <button onclick="viewProperty('${p.id}')" title="상세">👁</button>
+            <button onclick="openPropertyModal('${p.id}')" title="수정">✏️</button>
+            <button onclick="deleteProperty('${p.id}')" title="삭제">🗑</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  countEl.textContent = `${filtered.length}건`;
+}
+
 function renderPropertyTable() {
   const q      = (document.getElementById('searchInput').value||'').toLowerCase();
   const region = document.getElementById('filterRegion').value;
@@ -2260,6 +2388,15 @@ function renderPropertyTable() {
   });
   document.getElementById('tableCount').textContent = `${filtered.length}건`;
   document.getElementById('tableSummary').textContent = `광고중 ${filtered.filter(p=>p.status==='광고중').length}건`;
+
+  // 카드 뷰도 항상 동기화
+  renderPropCards(filtered);
+
+  // 뷰 모드에 따라 컨테이너 가시성 동기화
+  const tblEl = document.getElementById('propertyTableContainer');
+  const crdEl = document.getElementById('propertyCardContainer');
+  if (tblEl) tblEl.style.display = _propViewMode==='card' ? 'none' : '';
+  if (crdEl) crdEl.style.display = _propViewMode==='card' ? '' : 'none';
 }
 
 // ============================================================
@@ -5627,6 +5764,13 @@ function _initDriveBackupStatus() {
   updateCount();
   renderDashboard();
   initFilterChips();
+  // 저장된 뷰 모드 복원
+  if (_propViewMode === 'card') {
+    const t = document.getElementById('viewToggleTable');
+    const c = document.getElementById('viewToggleCard');
+    if (t) t.classList.remove('active');
+    if (c) c.classList.add('active');
+  }
   await syncFromSheets();
   _initDriveBackupStatus();
   if (SheetAPI.isConfigured()) _scheduleDriveBackup();
