@@ -136,6 +136,29 @@
   .detail-item span{font-size:14px;color:var(--text)}
   .detail-item.full{grid-column:1/-1}
   .detail-divider{grid-column:1/-1;border:none;border-top:1px solid var(--border);margin:4px 0}
+  /* 매물 상세 탭 네비 */
+  .detail-tab-nav{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;position:sticky;top:0;background:var(--card);z-index:2;padding-top:4px}
+  .detail-tab{padding:9px 18px;font-size:13px;font-weight:600;color:var(--text-sm);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;white-space:nowrap}
+  .detail-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+  .detail-tab:hover:not(.active){color:var(--text);background:#f8faff}
+  /* 가격 요약 바 */
+  .detail-price-bar{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .detail-price-bar .dpb-price{font-size:20px;font-weight:800;color:#fff}
+  .detail-price-bar .dpb-price span{color:#60a5fa}
+  .detail-price-bar .dpb-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .detail-price-bar .dpb-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,.15);color:#e2e8f0}
+  /* 섹션 구분 헤더 */
+  .detail-section-hd{grid-column:1/-1;font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.06em;padding:10px 0 2px;border-bottom:1px solid var(--border);margin-bottom:4px}
+  /* 사진 탭 그리드 */
+  .detail-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .detail-photo-grid img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;cursor:zoom-in;border:1px solid var(--border);transition:transform .15s}
+  .detail-photo-grid img:hover{transform:scale(1.03);box-shadow:0 4px 16px rgba(0,0,0,.15)}
+  /* 메모 렌더링 */
+  .detail-memo-section{margin-bottom:14px}
+  .detail-memo-section h4{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+  .detail-memo-section p{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap}
+  /* 지도 탭 */
+  #detailMapContainer{border-radius:12px;overflow:hidden;border:1px solid var(--border)}
   .confirm-modal{width:400px}
   .confirm-modal .modal-body{text-align:center;padding:30px 20px}
   .confirm-modal .confirm-icon{font-size:40px;margin-bottom:14px}
@@ -1214,9 +1237,27 @@
 
 <!-- Detail Modal -->
 <div class="modal-overlay" id="detailModal">
-  <div class="modal">
-    <div class="modal-header"><h3 id="detailTitle">매물 상세</h3><button class="close-btn" onclick="closeModal('detailModal')">×</button></div>
-    <div class="modal-body" id="detailBody"></div>
+  <div class="modal" style="width:780px;max-width:96vw">
+    <div class="modal-header">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+        <h3 id="detailTitle" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">매물 상세</h3>
+        <span id="detailSubtitle" style="font-size:11px;color:var(--text-sm)"></span>
+      </div>
+      <button class="close-btn" onclick="closeModal('detailModal')">×</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px 20px">
+      <div id="detailPriceBar"></div>
+      <div class="detail-tab-nav">
+        <div class="detail-tab active" id="dtab-info" onclick="switchDetailTab('info')">📋 매물 정보</div>
+        <div class="detail-tab" id="dtab-photos" onclick="switchDetailTab('photos')">📸 사진</div>
+        <div class="detail-tab" id="dtab-map" onclick="switchDetailTab('map')">🗺️ 위치</div>
+        <div class="detail-tab" id="dtab-memo" onclick="switchDetailTab('memo')">📝 메모</div>
+      </div>
+      <div id="dtabBody-info"></div>
+      <div id="dtabBody-photos" style="display:none"></div>
+      <div id="dtabBody-map" style="display:none"></div>
+      <div id="dtabBody-memo" style="display:none"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('detailModal')">닫기</button>
       <button class="btn" id="detailPptBtn" style="background:#16a34a;color:#fff;border:none">📄 고객 자료</button>
@@ -2342,50 +2383,194 @@ async function saveProperty() {
   }
 }
 
+// ── 매물 상세 탭 전환 ───────────────────────────────────────
+let _detailMapInited = false;
+let _detailCurrentId = null;
+
+function switchDetailTab(tab) {
+  ['info','photos','map','memo'].forEach(t => {
+    document.getElementById('dtab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('dtabBody-'+t).style.display = t===tab ? '' : 'none';
+  });
+  if (tab === 'map' && !_detailMapInited && _detailCurrentId) {
+    _initDetailMap(_detailCurrentId);
+    _detailMapInited = true;
+  }
+}
+
+function _initDetailMap(id) {
+  const p = loadProperties().find(x=>x.id===id); if(!p) return;
+  const addr = (p.address||'').trim();
+  const container = document.getElementById('dtabBody-map');
+  container.innerHTML = `<div id="detailMapContainer" style="height:380px"></div>`;
+  if (!addr || !window.kakao) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-sm)">카카오맵 설정이 필요합니다</div>';
+    return;
+  }
+  try {
+    const map = new kakao.maps.Map(document.getElementById('detailMapContainer'), {
+      center: new kakao.maps.LatLng(37.5665, 126.978), level: 3
+    });
+    const geocoder = new kakao.maps.services.Geocoder();
+    geocoder.addressSearch(addr, (result, status) => {
+      if (status === kakao.maps.services.Status.OK) {
+        const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+        map.setCenter(coords);
+        const marker = new kakao.maps.Marker({ map, position: coords });
+        const iw = new kakao.maps.InfoWindow({
+          content: `<div style="padding:6px 10px;font-size:12px;font-weight:600">${p.address}</div>`
+        });
+        iw.open(map, marker);
+      } else {
+        document.getElementById('detailMapContainer').innerHTML =
+          '<div style="padding:40px;text-align:center;color:var(--text-sm)">주소를 찾을 수 없습니다</div>';
+      }
+    });
+  } catch(e) {}
+}
+
+function _renderDetailMemo(memo, privateMemo) {
+  let html = '';
+  if (memo && memo.trim()) {
+    // ## 헤더로 섹션 분리
+    const sections = memo.split(/^##\s*/m).filter(Boolean);
+    if (sections.length > 1) {
+      sections.forEach(sec => {
+        const lines = sec.split('\n');
+        const title = lines[0].trim();
+        const body = lines.slice(1).join('\n').trim();
+        html += `<div class="detail-memo-section"><h4>📌 ${title}</h4><p>${body||'-'}</p></div>`;
+      });
+    } else {
+      html += `<div class="detail-memo-section"><p>${memo}</p></div>`;
+    }
+  } else {
+    html += `<div style="color:var(--text-sm);font-size:13px;padding:20px 0">메모 없음</div>`;
+  }
+  if (privateMemo) {
+    html += `<div style="background:#2c2c0a;border:1px solid #4a4a1a;border-radius:10px;padding:12px 16px;margin-top:12px">
+      <div style="font-size:11px;font-weight:700;color:#ffd60a;margin-bottom:6px">🔒 비공개 메모</div>
+      <div style="font-size:13px;color:#ffe066;white-space:pre-wrap">${privateMemo}</div>
+    </div>`;
+  }
+  return html;
+}
+
 function viewProperty(id) {
-  const p=loadProperties().find(x=>x.id===id); if(!p) return;
-  const landlord=loadLandlords().find(l=>l.id===p.landlordId);
-  const landlordStr=landlord?`${landlord.name} (${landlord.phone})`:'-';
-  const priceStr=p.dealType==='전세'?`전세 ${fmtMoney(p.deposit)}만원`:`보증금 ${fmtMoney(p.deposit)}만 / 월세 ${fmtMoney(p.rent)}만 / 관리비 ${fmtMoney(p.maintenance)}만`;
-  document.getElementById('detailTitle').textContent=`${p.id} — ${p.address}`;
-  document.getElementById('detailBody').innerHTML=`
+  const p = loadProperties().find(x=>x.id===id); if(!p) return;
+  const landlord = loadLandlords().find(l=>l.id===p.landlordId);
+  const landlordStr = landlord ? `${landlord.name} (${landlord.phone})` : '-';
+
+  // 가격 문자열
+  let priceMain = '', priceSub = '';
+  if (p.dealType === '전세') {
+    priceMain = `전세 ${fmtMoney(p.deposit)}만원`;
+  } else if (p.dealType === '매매') {
+    priceMain = `매매 ${fmtMoney(p.deposit)}만원`;
+  } else {
+    const dep = p.deposit ? `보증금 ${fmtMoney(p.deposit)}만` : '';
+    const rent = p.rent ? `월세 ${fmtMoney(p.rent)}만` : '';
+    const maint = p.maintenance ? `관리비 ${fmtMoney(p.maintenance)}만` : '';
+    priceMain = [dep, rent].filter(Boolean).join(' / ');
+    priceSub = maint;
+  }
+
+  // 층 표시
+  const floorStr = p.floorCur
+    ? `${p.floorCur}층${p.floorTotal ? ' / 총'+p.floorTotal+'층' : ''}`
+    : (p.floor || '-');
+
+  // 사진 URL 파싱
+  let photoUrls = [];
+  if (p.photoLink) {
+    try { photoUrls = JSON.parse(p.photoLink); } catch(e) { photoUrls = [p.photoLink]; }
+    if (!Array.isArray(photoUrls)) photoUrls = [photoUrls];
+    photoUrls = photoUrls.filter(Boolean);
+  }
+
+  _detailCurrentId = id;
+  _detailMapInited = false;
+
+  // 헤더
+  document.getElementById('detailTitle').textContent = p.address || `매물 #${p.id}`;
+  document.getElementById('detailSubtitle').textContent = `#${p.id} · ${p.buildingType||''} · ${p.dong||p.region||''}`;
+
+  // 가격 바
+  document.getElementById('detailPriceBar').innerHTML = `
+    <div class="detail-price-bar">
+      <div>
+        <div class="dpb-price"><span>${p.dealType||''}</span> ${priceMain}</div>
+        ${priceSub ? `<div style="font-size:12px;color:#94a3b8;margin-top:2px">${priceSub}</div>` : ''}
+      </div>
+      <div class="dpb-meta">
+        <span class="dpb-badge">${p.buildingType||'-'}</span>
+        <span class="dpb-badge">${p.area?p.area+'㎡':'-'}</span>
+        <span class="dpb-badge">${floorStr}</span>
+        <span class="badge badge-${p.status}" style="font-size:11px">${p.status}</span>
+      </div>
+    </div>`;
+
+  // ── 탭1: 매물 정보 ──
+  document.getElementById('dtabBody-info').innerHTML = `
     <div class="detail-grid">
-      <div class="detail-item"><label>매물번호</label><span>${p.id}</span></div>
-      <div class="detail-item"><label>등록일</label><span>${p.date||'-'}</span></div>
+      <div class="detail-section-hd">📍 위치</div>
+      <div class="detail-item full"><label>상세주소</label><span>${p.address}</span></div>
       <div class="detail-item"><label>구</label><span>${p.region||'-'}</span></div>
       <div class="detail-item"><label>동</label><span>${p.dong||'-'}</span></div>
-      <div class="detail-item"><label>상태</label><span><span class="badge badge-${p.status}">${p.status}</span></span></div>
-      <div class="detail-item full"><label>상세주소</label><span>${p.address}</span></div>
       <div class="detail-item"><label>건물명</label><span>${p.buildingName||'-'}</span></div>
       <div class="detail-item"><label>호수</label><span>${p.unit||'-'}</span></div>
-      <hr class="detail-divider">
+
+      <div class="detail-section-hd">🏠 건물 정보</div>
       <div class="detail-item"><label>건물유형</label><span>${p.buildingType||'-'}</span></div>
       <div class="detail-item"><label>전용면적</label><span>${p.area?p.area+'㎡':'-'}</span></div>
-      <div class="detail-item"><label>층/총층</label><span>${p.floorCur||p.floor ? (p.floorCur?(p.floorCur+'층'+(p.floorTotal?'/총'+p.floorTotal+'층':'')):(p.floor||'-')) : '-'}</span></div>
+      <div class="detail-item"><label>층/총층</label><span>${floorStr}</span></div>
       <div class="detail-item"><label>방향</label><span>${p.direction||'-'}</span></div>
       <div class="detail-item"><label>주차</label><span>${p.parking||'-'}</span></div>
-      <div class="detail-item"><label>옵션</label><span>${p.option||'-'}</span></div>
-      <hr class="detail-divider">
+      <div class="detail-item full"><label>옵션</label><span>${p.option||'-'}</span></div>
+
+      <div class="detail-section-hd">💰 거래 조건</div>
       <div class="detail-item"><label>거래유형</label><span><span class="badge badge-${p.dealType}">${p.dealType||'-'}</span></span></div>
-      <div class="detail-item full"><label>가격 조건</label><span>${priceStr}</span></div>
+      <div class="detail-item"><label>보증금</label><span>${p.deposit?fmtMoney(p.deposit)+'만원':'-'}</span></div>
+      ${p.dealType!=='전세'&&p.dealType!=='매매'?`<div class="detail-item"><label>월세</label><span>${p.rent?fmtMoney(p.rent)+'만원':'-'}</span></div>
+      <div class="detail-item"><label>관리비</label><span>${p.maintenance?fmtMoney(p.maintenance)+'만원':'-'}</span></div>`:''}
       <div class="detail-item"><label>입주가능일</label><span>${p.moveIn||'-'}</span></div>
-      <hr class="detail-divider">
+
+      <div class="detail-section-hd">👤 임대인 / 중개</div>
       <div class="detail-item full"><label>임대인</label><span>${landlordStr}</span></div>
       <div class="detail-item"><label>의뢰형태</label><span>${p.commission||'-'}</span></div>
       <div class="detail-item"><label>등기부확인일</label><span>${p.registryDate||'-'}</span></div>
+      <div class="detail-item"><label>등록일</label><span>${p.date||'-'}</span></div>
       <div class="detail-item"><label>사진촬영</label><span>${p.photo==='Y'?'✅ 완료':'⬜ 미완료'}</span></div>
       <div class="detail-item"><label>광고채널</label><span>${p.adChannel||'-'}</span></div>
-      <div class="detail-item"><label>네이버 매물번호</label><span>${p.naverNo?`<a href="https://m.land.naver.com/article/info/${p.naverNo}" target="_blank" style="color:var(--primary)">${p.naverNo} ↗</a>`:'-'}</span></div>
-      <div class="detail-item full"><label>📸 사진</label><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${(()=>{if(!p.photoLink)return '<span style="color:var(--text-sm)">-</span>';let urls=[];try{urls=JSON.parse(p.photoLink);}catch(e){urls=[p.photoLink];}if(!Array.isArray(urls))urls=[urls];urls=urls.filter(Boolean);if(!urls.length)return '<span style="color:var(--text-sm)">-</span>';return urls.map((u,i)=>'<img src="'+u+'" style="width:110px;height:88px;object-fit:cover;border-radius:7px;cursor:zoom-in;border:1px solid var(--border)" onclick="openLightbox(\''+u+'\')" loading="lazy" onerror="this.style.display=\'none\'" title="사진 '+(i+1)+'">').join('');})()}</div></div>
-      <div class="detail-item full"><label>비고/메모</label><span style="white-space:pre-wrap">${p.memo||'-'}</span></div>
-      ${loadPrivateMemo(p.id) ? `<div class="detail-item full" style="background:#2c2c0a;border:1px solid #4a4a1a;border-radius:8px;padding:10px;margin-top:8px">
-        <label style="color:#ffd60a">🔒 비공개 메모</label>
-        <span style="white-space:pre-wrap;color:#ffe066">${loadPrivateMemo(p.id)}</span>
-      </div>` : ''}
+      <div class="detail-item full"><label>네이버 매물번호</label><span>${p.naverNo?`<a href="https://m.land.naver.com/article/info/${p.naverNo}" target="_blank" style="color:var(--primary)">${p.naverNo} ↗</a>`:'-'}</span></div>
     </div>`;
 
-  document.getElementById('detailEditBtn').onclick=()=>{ closeModal('detailModal'); openPropertyModal(id); };
-  document.getElementById('detailPptBtn').onclick=()=>{ generatePropertySlide(id); };
+  // ── 탭2: 사진 ──
+  if (photoUrls.length) {
+    document.getElementById('dtabBody-photos').innerHTML =
+      `<div class="detail-photo-grid">` +
+      photoUrls.map((u,i)=>
+        `<img src="${u}" loading="lazy" onerror="this.style.display='none'"
+          onclick="openLightbox('${u}')" title="사진 ${i+1}">`
+      ).join('') + `</div>`;
+  } else {
+    document.getElementById('dtabBody-photos').innerHTML =
+      `<div style="padding:50px;text-align:center;color:var(--text-sm)">등록된 사진이 없습니다</div>`;
+  }
+
+  // ── 탭3: 지도 (초기화는 탭 클릭 시) ──
+  document.getElementById('dtabBody-map').innerHTML =
+    `<div style="padding:40px;text-align:center;color:var(--text-sm)">위치 탭을 클릭하면 지도가 로드됩니다</div>`;
+
+  // ── 탭4: 메모 ──
+  document.getElementById('dtabBody-memo').innerHTML =
+    _renderDetailMemo(p.memo, loadPrivateMemo(p.id));
+
+  // 첫 탭으로 초기화
+  switchDetailTab('info');
+
+  document.getElementById('detailEditBtn').onclick = () => { closeModal('detailModal'); openPropertyModal(id); };
+  document.getElementById('detailPptBtn').onclick = () => { generatePropertySlide(id); };
   document.getElementById('detailModal').classList.add('open');
 }
 
